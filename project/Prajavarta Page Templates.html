@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Prajavarta · Page Templates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="parts.jsx"></script>
+<script type="text/babel" src="pages/mobile-homepage.jsx"></script>
+<script type="text/babel" src="pages/desktop-homepage.jsx"></script>
+<script type="text/babel" src="pages/mobile-article.jsx"></script>
+<script type="text/babel" src="pages/desktop-article.jsx"></script>
+<script type="text/babel" src="pages/category.jsx"></script>
+<script type="text/babel" src="pages/author.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+function App() {
+  return (
+    <DesignCanvas title="Prajavarta · Page Template Specifications" subtitle="Section 5 deliverables · Mobile (375px) and Desktop (1440px) frames · Slot codes match Section 6.1">
+      <DCSection id="homepage" title="5.1 Homepage" subtitle="Mobile-first single column · Desktop 12-col grid split 8+4">
+        <DCArtboard id="h-mobile" label="5.1.1 Mobile Homepage · 375px" width={375} height={2400} data-screen-label="Homepage Mobile">
+          <MobileHomepage/>
+        </DCArtboard>
+        <DCArtboard id="h-desktop" label="5.1.2 Desktop Homepage · 1440px" width={1440} height={3600} data-screen-label="Homepage Desktop">
+          <DesktopHomepage/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="article" title="5.2 News Article Page" subtitle="Most important template · highest revenue · Discover-optimised">
+        <DCArtboard id="a-mobile" label="5.2.1 Mobile Article · 375px" width={375} height={2800} data-screen-label="Article Mobile">
+          <MobileArticle/>
+        </DCArtboard>
+        <DCArtboard id="a-desktop" label="5.2.2 Desktop Article · 1440px · 8+4 grid" width={1440} height={3400} data-screen-label="Article Desktop">
+          <DesktopArticle/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="category" title="5.3 Category & Hub Pages" subtitle="Mini editorial homepages, not archive lists · drives SEO topical authority">
+        <DCArtboard id="c-mobile" label="5.3.1 Mobile Category · 375px" width={375} height={2400} data-screen-label="Category Mobile">
+          <MobileCategory/>
+        </DCArtboard>
+        <DCArtboard id="c-desktop" label="5.3.2 Desktop Category · 1440px" width={1440} height={2800} data-screen-label="Category Desktop">
+          <DesktopCategory/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="tag" title="5.4 Tag & Topic Cluster Pages" subtitle="Reuses category layout · less editorial curation · noindex if <5 articles">
+        <DCArtboard id="t-mobile" label="5.4 Mobile Tag · #मराठा आरक्षण" width={375} height={2200} data-screen-label="Tag Mobile">
+          <MobileCategory tag/>
+        </DCArtboard>
+        <DCArtboard id="t-desktop" label="5.4 Desktop Tag · #मराठा आरक्षण" width={1440} height={2400} data-screen-label="Tag Desktop">
+          <DesktopCategory tag/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="author" title="5.5 Author Pages" subtitle="E-E-A-T foundation · author profile replaces category header · ad slots follow C/DC scheme">
+        <DCArtboard id="au-desktop" label="5.5 Author Profile · 1440px" width={1440} height={2400} data-screen-label="Author Desktop">
+          <AuthorPage/>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+/* Prajavarta Design System Tokens */
+:root {
+  /* Brand */
+  --brand-primary: #1F4E78;
+  --brand-primary-dark: #163A5C;
+  --brand-primary-light: #E8F0F7;
+  --brand-accent: #D4A017;
+
+  /* Semantic */
+  --color-breaking: #D32F2F;
+  --color-live: #E53935;
+  --color-sponsored: #F39C12;
+  --color-success: #2E7D32;
+  --color-warning: #ED6C02;
+  --color-error: #C62828;
+  --color-info: #0288D1;
+
+  /* Text */
+  --text-primary: #1A1A1A;
+  --text-secondary: #4A4A4A;
+  --text-tertiary: #6B6B6B;
+  --text-disabled: #9E9E9E;
+  --text-inverse: #FFFFFF;
+
+  /* Surface */
+  --surface-primary: #FFFFFF;
+  --surface-secondary: #F7F8FA;
+  --surface-tertiary: #EFF1F4;
+  --surface-overlay: rgba(0,0,0,0.6);
+  --border-default: #E0E3E7;
+  --border-strong: #BDC3C9;
+
+  /* Categories */
+  --cat-maharashtra: #1565C0;
+  --cat-pune: #2E7D32;
+  --cat-politics: #6A1B9A;
+  --cat-crime: #C62828;
+  --cat-entertainment: #E91E63;
+  --cat-sports: #F57C00;
+  --cat-business: #00695C;
+  --cat-national: #283593;
+  --cat-international: #37474F;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Type */
+  --font-mr: "Noto Sans Devanagari", "Inter", system-ui, sans-serif;
+  --font-en: "Inter", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-en);
+  color: var(--text-primary);
+  background: var(--surface-primary);
+  -webkit-font-smoothing: antialiased;
+}
+.mr { font-family: var(--font-mr); }
+
+/* Ad placeholder */
+.ad {
+  background: repeating-linear-gradient(
+    45deg,
+    #F1F2F4,
+    #F1F2F4 8px,
+    #E7E9EC 8px,
+    #E7E9EC 16px
+  );
+  border: 1px dashed var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  text-align: center;
+}
+.ad__label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+.ad__id {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+.ad__size {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.ad__sticky {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 9px;
+  background: var(--brand-accent);
+  color: #1A1A1A;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* Image placeholder */
+.imgph {
+  background:
+    linear-gradient(135deg, rgba(0,0,0,0.04) 25%, transparent 25%, transparent 50%, rgba(0,0,0,0.04) 50%, rgba(0,0,0,0.04) 75%, transparent 75%, transparent) 0 0/12px 12px,
+    var(--brand-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-primary);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  position: relative;
+}
+.imgph::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(31, 78, 120, 0.18);
+}
+
+/* Annotation */
+.annot {
+  position: absolute;
+  z-index: 5;
+  background: #1A1A1A;
+  color: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 3px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Scroll utilities */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

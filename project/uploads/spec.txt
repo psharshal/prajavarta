@@ -1,0 +1,2696 @@
+
+
+PRAJAVARTA.COM
+
+Design Team Specification Document
+
+Complete UX/UI execution spec, design system tokens, ad placement architecture, and cross-team handoff protocol
+
+Version 1.0  |  2026
+
+Prepared by: SEO &amp; Growth Team
+
+Owner: Design Team
+
+
+
+Table of Contents
+
+1. Executive Summary
+
+2. Design Philosophy and Non-Negotiables
+
+3. Ad Slot Naming Convention
+
+4. Design System Foundations
+
+   4.1 Spacing and Grid Tokens
+
+   4.2 Typography System (Marathi-Optimized)
+
+   4.3 Color System and Tokens
+
+   4.4 Iconography and Imagery Rules
+
+   4.5 Component Library Inventory
+
+5. Page Template Specifications
+
+   5.1 Homepage
+
+   5.2 News Article Page
+
+   5.3 Category and Hub Pages
+
+   5.4 Tag and Topic Cluster Pages
+
+   5.5 Author Pages
+
+   5.6 Static Trust Pages
+
+   5.7 Search Results Page
+
+6. Ad Placement Architecture
+
+   6.1 Master Ad Slot Reference Table
+
+   6.2 Ad Density Rules by Article Length
+
+   6.3 Figma Placeholder Standards
+
+7. State Specifications (Loading, Empty, Error, 404)
+
+8. Accessibility Standards
+
+9. Article Page Variants
+
+10. Design Team Definition of Done
+
+11. Handoff Protocol to Tech Team
+
+12. Cross-Team Coordination
+
+13. Phase Map and Timeline
+
+14. Quality Assurance Checklist
+
+15. Glossary
+
+
+
+1. Executive Summary
+
+
+1.1 Document Purpose
+
+This document is the complete specification for the Design Team executing the Prajavarta.com revamp. It translates the direction set in the Master Execution Document into executable, measurable Figma deliverables.
+
+
+1.2 Scope
+
+In scope:
+
+
+Design system foundations (spacing, typography, color, components)
+
+
+Every page template with mobile and desktop structures
+
+
+Responsive breakpoint behavior
+
+
+Ad placeholder architecture inside Figma
+
+
+Design Team Definition of Done
+
+
+Handoff protocol to Tech and SEO teams
+
+Out of scope (covered in other documents):
+
+
+URL structure and information architecture (SEO Spec)
+
+
+Schema markup and structured data (SEO Spec)
+
+
+CMS implementation and rendering strategy (Tech Spec)
+
+
+Ad operations setup in GAM (Ad Ops Spec)
+
+
+
+2. Design Philosophy and Non-Negotiables
+
+
+2.1 Core Philosophy
+
+Prajavarta should feel like a modern editorial publishing product, not a regional news portal. Every design decision should be evaluated against this filter.
+
+The reader experience should prioritize, in this order:
+
+
+Readability of the article
+
+
+Trust signals and editorial credibility
+
+
+Content discoverability across the site
+
+
+Controlled monetization that supports rather than interrupts reading
+
+
+Speed of perceived load and interaction
+
+
+2.2 Mobile-First Mandate
+
+Mobile is the primary canvas. Every screen must be designed mobile-first, then expanded to tablet and desktop. Desktop layouts evolve from mobile logic, not the reverse.
+
+The majority of Marathi news consumption happens on mobile devices, often on entry-level Android handsets with mid-tier connectivity. Designing desktop-first and shrinking down produces cluttered mobile screens. Designing mobile-first and expanding up produces calm, scannable layouts at every size.
+
+
+2.3 The Twelve Non-Negotiables
+
+These rules apply to every screen, every component, every state. There are no exceptions.
+
+
+Every ad placeholder must exist in Figma with reserved dimensions before frontend handoff.
+
+
+No ad placement may sit between an H1 headline and the first paragraph of body text.
+
+
+All interactive elements must have a minimum touch target of 44 by 44 pixels.
+
+
+All text must meet WCAG 2.1 AA contrast ratios (4.5:1 for body, 3:1 for large text).
+
+
+Marathi body text must be a minimum of 17px on mobile and 18px on desktop.
+
+
+Line-height for Marathi body text must be 1.7 minimum.
+
+
+Article reading column must be capped at 680px on desktop to maintain readability.
+
+
+Spacing between paragraphs must be 16px minimum.
+
+
+All cards must follow the unified spacing scale (4, 8, 12, 16, 24, 32, 48, 64).
+
+
+Sticky elements are limited to one per viewport (header OR sidebar OR anchor ad, not multiple).
+
+
+Hero images must be a minimum of 1200px wide for Discover eligibility.
+
+
+Every component must have hover, active, focus, disabled, and loading states defined.
+
+
+
+3. Ad Slot Naming Convention
+
+Read this section before any other section. Every page template, every Figma placeholder, every component reference in this document uses these slot codes. Without understanding the naming convention, the page template tables will not make sense.
+
+
+3.1 Why This Naming Exists
+
+Three teams (Design, Tech, Ad Ops) need to talk about the same ad slot without confusion. A slot called &quot;the second ad on the article page on mobile&quot; is ambiguous. A slot called &quot;A2&quot; is not.
+
+This naming system is mirrored across:
+
+
+Figma layer names
+
+
+Frontend component names
+
+
+Google Ad Manager (GAM) ad unit names
+
+
+QA references and bug reports
+
+
+3.2 The Code Structure
+
+Every slot has a two-part code: a letter prefix indicating page type and device, followed by a number indicating position on that page.
+
+
+Prefix
+Meaning
+Example
+H
+Homepage Mobile
+H1, H2, H3, H4
+DH
+Desktop Homepage
+DH1, DH2, DH3, DH4
+A
+Mobile Article Page
+A1, A2, A3, A4, A5, A6
+DA
+Desktop Article Page
+DA1, DA2, DA3, DA4, DA5
+C
+Mobile Category Page
+C1, C2, C3
+DC
+Desktop Category Page
+DC1, DC2, DC3
+
+
+
+
+3.3 How To Read a Slot Code
+
+Examples to make this concrete:
+
+
+H2: Homepage, Mobile, second ad position from the top
+
+
+DH1: Desktop Homepage, first ad position (top billboard)
+
+
+A2: Article page, Mobile, second ad position
+
+
+DA2: Desktop Article page, second ad position (sticky sidebar)
+
+
+C1: Category page, Mobile, first ad position
+
+
+DC2: Desktop Category page, second ad position (sticky sidebar)
+
+
+3.4 Number = Position Order, Not Importance
+
+The number in each slot code reflects the order the ad appears as the user scrolls down the page, starting from the top. A1 is the first ad encountered. A5 is the fifth. The numbers are not a ranking of revenue value or priority.
+
+
+3.5 Mobile and Desktop Are Separate Slots
+
+H1 and DH1 are not the same slot rendered at different sizes. They are independent ad units with different positions, sizes, and behaviors. Mobile users see H slots. Desktop users see DH slots. They never see both.
+
+This separation gives Tech and Ad Ops teams the ability to run different ad strategies per device without conflicts.
+
+
+3.6 Quick Reference
+
+The complete list of all 25 slots with sizes, positions, and sticky behavior is documented in Section 6.1 (Master Ad Slot Reference Table). The page template specifications in Section 5 reference these slots by code.
+
+
+
+4. Design System Foundations
+
+The design system must be built and published as a Figma library before page-level design work begins. Page templates must consume tokens and components from the library, not redefine them.
+
+
+4.1 Spacing and Grid Tokens
+
+The spacing system uses a 4px base unit. All margins, paddings, and gaps must use values from this scale.
+
+
+Token
+Value
+Use Case
+space-1
+4px
+Tight inline spacing (icon to label gap)
+space-2
+8px
+Compact spacing (tag chip padding)
+space-3
+12px
+Small spacing (mobile card internal padding)
+space-4
+16px
+Default spacing (paragraph spacing, gutter)
+space-5
+24px
+Section spacing (desktop card padding)
+space-6
+32px
+Large spacing (module separation)
+space-7
+48px
+Section break (between major page sections)
+space-8
+64px
+Major break (above and below hero blocks)
+space-9
+96px
+Page-level break (above footer)
+
+
+
+
+4.1.1 Grid System
+
+
+Breakpoint
+Columns
+Gutter
+Margin
+Use
+Mobile (320-767px)
+4
+16px
+16px
+All mobile layouts
+Tablet (768-1023px)
+8
+20px
+24px
+Tablet portrait and landscape
+Desktop (1024-1439px)
+12
+24px
+32px
+Standard desktop
+Wide Desktop (1440px+)
+12
+24px
+auto (max 1280px)
+Large displays
+
+
+
+
+4.2 Typography System (Marathi-Optimized)
+
+Typography is the single biggest weakness in regional news websites. Most fail because they treat Marathi text the same as English. The system below is optimized for Devanagari rendering.
+
+
+4.2.1 Font Stack
+
+
+Primary (Marathi/Devanagari): Noto Sans Devanagari (weights 400, 500, 600, 700)
+
+
+Secondary (English/Latin): Inter (weights 400, 500, 600, 700)
+
+
+Fallback chain: system-ui, -apple-system, BlinkMacSystemFont, sans-serif
+
+
+4.2.2 Type Scale (Mobile)
+
+
+Token
+Size
+Line Height
+Weight
+Use
+display-xl
+32px
+1.3
+700
+Homepage hero headline
+display-lg
+28px
+1.3
+700
+Article H1
+display-md
+24px
+1.35
+700
+Section titles
+heading-lg
+20px
+1.4
+600
+Article H2
+heading-md
+18px
+1.45
+600
+Article H3, featured cards
+heading-sm
+16px
+1.5
+600
+Standard card headlines
+body-lg
+17px
+1.7
+400
+Article body (mandatory minimum)
+body-md
+15px
+1.6
+400
+Card descriptions
+body-sm
+13px
+1.5
+400
+Metadata, timestamps
+caption
+12px
+1.4
+500
+Image captions, labels
+overline
+11px
+1.4
+600
+Category labels
+
+
+
+
+4.2.3 Type Scale (Desktop)
+
+
+Token
+Size
+Line Height
+Weight
+Use
+display-xl
+44px
+1.2
+700
+Homepage hero headline
+display-lg
+36px
+1.25
+700
+Article H1
+display-md
+28px
+1.3
+700
+Section titles
+heading-lg
+24px
+1.35
+600
+Article H2
+heading-md
+20px
+1.4
+600
+Article H3, featured cards
+heading-sm
+18px
+1.45
+600
+Standard card headlines
+body-lg
+18px
+1.7
+400
+Article body (mandatory minimum)
+body-md
+16px
+1.6
+400
+Card descriptions
+body-sm
+14px
+1.5
+400
+Metadata, timestamps
+caption
+13px
+1.4
+500
+Image captions, labels
+overline
+12px
+1.4
+600
+Category labels
+
+
+
+
+4.2.4 Marathi-Specific Rules
+
+
+Never use letter-spacing on Devanagari text. It breaks conjuncts.
+
+
+Never use text-transform: uppercase on Marathi text. Devanagari has no case.
+
+
+Line-height for Marathi body text must never go below 1.6.
+
+
+Avoid font weights below 400 for body text.
+
+
+
+4.3 Color System and Tokens
+
+
+4.3.1 Brand Colors
+
+
+Token
+Hex
+Use
+brand-primary
+#1F4E78
+Header background, primary CTA
+brand-primary-dark
+#163A5C
+Hover state on primary
+brand-primary-light
+#E8F0F7
+Subtle backgrounds, hover states
+brand-accent
+#D4A017
+Accent highlights, premium tags
+
+
+
+
+4.3.2 Semantic Colors
+
+
+Token
+Hex
+Use
+color-breaking
+#D32F2F
+Breaking news strip, live indicators
+color-live
+#E53935
+Live blog indicators, blinking dot
+color-sponsored
+#F39C12
+Sponsored content labels
+color-success
+#2E7D32
+Success states
+color-warning
+#ED6C02
+Warning states
+color-error
+#C62828
+Error states, form validation
+color-info
+#0288D1
+Informational notices
+
+
+
+
+4.3.3 Text Colors
+
+
+Token
+Hex
+Contrast (on white)
+Use
+text-primary
+#1A1A1A
+16.1:1
+Article body, primary headlines
+text-secondary
+#4A4A4A
+9.7:1
+Card descriptions
+text-tertiary
+#6B6B6B
+5.7:1
+Metadata, timestamps, captions
+text-disabled
+#9E9E9E
+2.8:1
+Disabled states only
+text-inverse
+#FFFFFF
+21:1 (on brand-primary)
+Text on dark backgrounds
+
+
+
+
+4.3.4 Surface Colors
+
+
+Token
+Hex
+Use
+surface-primary
+#FFFFFF
+Default page background
+surface-secondary
+#F7F8FA
+Section dividers, subtle separation
+surface-tertiary
+#EFF1F4
+Card backgrounds when needed
+surface-overlay
+rgba(0,0,0,0.6)
+Modal overlays, image overlays
+border-default
+#E0E3E7
+Card borders, dividers
+border-strong
+#BDC3C9
+Emphasized borders, focus states
+
+
+
+
+4.3.5 Category Identifier Colors
+
+Each major category has a dedicated identifier color used in chips, labels, and underlines. Used as accents only, never as full backgrounds.
+
+
+Category
+Hex
+Use
+Maharashtra
+#1565C0
+Category chip and underline
+Pune
+#2E7D32
+Category chip and underline
+Politics
+#6A1B9A
+Category chip and underline
+Crime
+#C62828
+Category chip and underline
+Entertainment
+#E91E63
+Category chip and underline
+Sports
+#F57C00
+Category chip and underline
+Business
+#00695C
+Category chip and underline
+National
+#283593
+Category chip and underline
+International
+#37474F
+Category chip and underline
+
+
+
+4.4 Iconography and Imagery Rules
+
+
+4.4.1 Icon System
+
+
+Library: Lucide React (open source)
+
+
+Sizes: 16px, 20px, 24px, 32px (always from this scale)
+
+
+Stroke width: 1.5px default, 2px for emphasis only
+
+
+Color: Inherits from parent text color via currentColor
+
+
+4.4.2 Image Specifications
+
+
+Use Case
+Min Width
+Aspect Ratio
+Notes
+Hero (homepage)
+1200px
+16:9
+Discover requires 1200px+
+Hero (article)
+1200px
+16:9
+Discover requires 1200px+
+Featured card
+800px
+16:9
+Twice display size for retina
+Standard card
+600px
+16:9
+Twice display size for retina
+Thumbnail
+240px
+1:1 or 16:9
+Twice display size for retina
+Author avatar
+200px
+1:1
+Square crop, face-centered
+Inline article image
+1200px
+Variable
+Maintain original aspect ratio
+
+
+
+
+4.5 Component Library Inventory
+
+The Figma library must contain every component below as a published component with all required variants. No page-level design begins until the library is complete.
+
+
+4.5.1 Article Cards (10 variants)
+
+
+Hero Card (full-width, large image, large headline)
+
+
+Featured Card (large image above, headline below)
+
+
+Standard Card (image left or top, headline right or below)
+
+
+Compact Card (small thumbnail, headline only)
+
+
+List Card (text-only, no image)
+
+
+Trending Card (numbered ranking)
+
+
+Video Card (with play icon overlay)
+
+
+Photo Gallery Card (with gallery icon and image count)
+
+
+Live Card (with red live indicator and pulsing dot)
+
+
+Sponsored Card (with sponsored label, visually distinct)
+
+
+4.5.2 Required States Per Card
+
+
+Default
+
+
+Hover (desktop only)
+
+
+Focus (keyboard navigation)
+
+
+Pressed (mobile tap feedback)
+
+
+Loading (skeleton state)
+
+
+4.5.3 Other Required Components
+
+
+Sticky Header (with scroll-up reveal)
+
+
+Breaking News Strip (auto-scrolling ticker)
+
+
+Category Chip
+
+
+Tag Chip
+
+
+Author Byline Component
+
+
+Social Share Bar
+
+
+Key Takeaways Block
+
+
+Inline Related Story Block
+
+
+Trending Module
+
+
+Category Module
+
+
+Recommendation Carousel
+
+
+Pagination Component
+
+
+Search Input
+
+
+Breadcrumb Component
+
+
+Footer Navigation
+
+
+Newsletter Signup Block
+
+
+Modal/Dialog Component
+
+
+Toast Notification
+
+
+Skeleton Loaders (one per card variant)
+
+
+Empty State Block
+
+
+Error State Block
+
+
+Ad Placeholder Components (one per slot)
+
+
+
+5. Page Template Specifications
+
+Every template requires three Figma frames: Mobile (375px), Tablet (768px), and Desktop (1440px). Each frame must include all states (loading, empty, error where applicable).
+
+How to read each template below: Mobile structure is given as a vertical stack of blocks in scroll order. Desktop structure is given as a grid layout with column allocations.
+
+
+5.1 Homepage
+
+
+5.1.1 Mobile Homepage Structure
+
+The mobile homepage is a single vertical column. Build the Figma frame at 375px width. Stack the following blocks top to bottom in this exact order. Use the spacing tokens from Section 4.1 between blocks.
+
+
+Order
+Block
+Height (approx)
+Specification
+1
+Sticky Header
+56px
+Logo left, search icon right, hamburger right. Hides on scroll-down, reveals on scroll-up.
+2
+Breaking News Strip
+40px
+Auto-scrolling ticker. Pause on tap. Red background (color-breaking).
+3
+Hero Story
+Image 16:9 + 120px text
+Single hero card. 1200px image minimum. display-xl headline.
+4
+Secondary Stories
+Variable
+2-3 standard cards stacked vertically.
+5
+Ad Slot H1
+100px reserved
+320x50 or 300x250.
+6
+Trending Module
+Variable
+Numbered list of 5 stories. heading-md headlines.
+7
+Category Block 1 (Maharashtra)
+Variable
+Header + featured card + 3 secondary cards.
+8
+Ad Slot H2
+300px reserved
+300x250.
+9
+Category Block 2 (Pune)
+Variable
+Same structure as Block 1.
+10
+Category Block 3 (Politics)
+Variable
+Same structure.
+11
+Ad Slot H3
+300px reserved
+300x250 or Native.
+12
+Category Blocks 4 onward
+Variable
+Remaining categories (Crime, Entertainment, Sports, Business).
+13
+Recommended Stories
+Variable
+6 cards, editor-curated or personalized.
+14
+Ad Slot H4
+Variable
+Multiplex/Native, responsive height.
+15
+Footer
+Variable
+Standard footer (see Section 5.6).
+
+
+
+
+5.1.2 Desktop Homepage Structure
+
+The desktop homepage uses a 12-column grid at 1440px width. Build the Figma frame at 1440px width with 32px outer margins.
+
+The desktop layout is organized in three vertical sections from top to bottom: header strip, main content area (with sidebar), and footer.
+
+
+Section 1: Header Strip (full-width)
+
+
+Sticky Header (56px tall): Logo left, primary navigation center, search icon right, login/account right
+
+
+Breaking News Strip (40px tall): Auto-scrolling ticker, red background
+
+
+Ad Slot DH1 (970x250): Top billboard, sits below the breaking strip and above the main content
+
+
+Section 2: Main Content Area (12-column grid split 8+4)
+
+The main content area is split into two columns:
+
+Left column (8 columns wide, the editorial area):
+
+
+Hero Story (full 8-column width): Single hero card with 1200px image, display-xl headline
+
+
+Secondary Stories Row (8-column width, split into 2 cards of 4 columns each)
+
+
+Trending Module (8-column width): Numbered list of 5 stories
+
+
+Ad Slot DH3 (728x90 or 300x250): Sits between trending and category blocks
+
+
+Category Block 1 (Maharashtra): Header + featured + 3 cards in 2-column grid
+
+
+Category Block 2 (Pune): Same structure
+
+
+Category Block 3 (Politics): Same structure
+
+
+Remaining Category Blocks (Crime, Entertainment, Sports, Business)
+
+
+Recommended Stories (8-column width): 6 cards in 3-column grid
+
+Right column (4 columns wide, the sidebar):
+
+
+Ad Slot DH2 (300x600): Sticky sidebar ad, sticks at top while user scrolls
+
+
+Mini Trending Module (below the sticky ad, scrolls with page): 5 stories, compact
+
+
+Newsletter Signup Block (scrolls with page)
+
+
+Section 3: Footer Strip (full-width)
+
+
+Ad Slot DH4 (Responsive Native): Sits before footer
+
+
+Footer Navigation (full-width)
+
+
+5.1.3 Homepage Performance Notes
+
+
+Above-the-fold elements: Hero image, headline, breaking strip, header. Total weight target under 200KB.
+
+
+LCP target: Hero image must be the LCP element. Optimize accordingly.
+
+
+Lazy-loaded threshold: Everything below the third card.
+
+
+
+5.2 News Article Page
+
+This is the most important template on the platform. It generates the most ad revenue, drives the most engagement, and accounts for the majority of Discover traffic.
+
+
+5.2.1 Mobile Article Page Structure
+
+Build the Figma frame at 375px width. The mobile article is a single vertical column. The structure is divided into three zones: above-the-fold, body, and below-body.
+
+
+Zone 1: Above-the-Fold (top to bottom)
+
+
+Order
+Element
+Spacing Below
+Specification
+1
+Sticky Header
+0
+Same as homepage.
+2
+Breadcrumb
+space-3
+Home &gt; Category &gt; Article. body-sm, text-tertiary.
+3
+Category Chip
+space-3
+Linked. Uses category identifier color.
+4
+H1 Headline
+space-3
+display-lg, text-primary, max 2 lines preferred.
+5
+Subtitle
+space-4
+heading-md, text-secondary, max 3 lines.
+6
+Author Byline
+space-4
+Avatar 40px, name, date, read time.
+7
+Social Share
+space-4
+WhatsApp, Facebook, Twitter, Copy. Inline.
+8
+Hero Image
+space-4
+16:9, 1200px wide minimum.
+9
+Image Caption
+space-5
+caption token, text-tertiary.
+10
+Ad Slot A1
+space-5
+300x250. Reserved space mandatory.
+
+
+
+Critical rule: No ad placement is permitted between the H1 headline and the first paragraph. The Hero Image and Image Caption are part of the editorial flow. The first ad (Slot A1) sits AFTER the hero image, not between text elements.
+
+
+Zone 2: Article Body
+
+The body follows a strict rhythm to balance readability and monetization.
+
+
+Position
+Element
+Specification
+After A1
+Paragraph 1-2
+body-lg, line-height 1.7, paragraph spacing 16px.
+After P2
+Ad Slot A2
+300x250. Inline ad.
+After A2
+Key Takeaways Block
+Optional. Numbered list with accent left border.
+After takeaways
+Paragraph 3-4
+Continue body.
+Mid-body
+Inline image (if present)
+Full bleed. Caption beneath.
+After P5-6
+Inline Related Story
+Single recommendation. body-md headline.
+After P7-8
+Ad Slot A3
+300x250 or Native. Only if article has 600+ words.
+After P9 onward
+Remaining paragraphs
+Continue until article end.
+
+
+
+
+Zone 3: Below-Body
+
+
+Tag Chips Row: Linked tags. Horizontal scroll if overflow.
+
+
+Author Bio Block: Expanded byline with bio.
+
+
+Ad Slot A4: Multiplex/Native. Before related stories.
+
+
+Related Stories Module: 6 stories in compact card grid.
+
+
+Trending Stories Module: 5 stories, numbered.
+
+
+Footer: Standard.
+
+
+Ad Slot A5 (Sticky): 320x50 anchor at bottom of viewport. Sticks regardless of scroll position.
+
+
+5.2.2 Desktop Article Page Structure
+
+Build the Figma frame at 1440px width. The desktop article uses a 12-column grid split 8+4.
+
+
+Section 1: Header Strip (full-width)
+
+
+Sticky Header
+
+
+Breaking News Strip
+
+
+Ad Slot DA1 (970x250): Top billboard, sits below breaking strip and above article content
+
+
+Section 2: Article Content Area (12-column grid split 8+4)
+
+Left column (8 columns wide, the article reading column):
+
+Important: While the column is 8 grid columns wide, the actual reading content (paragraphs) inside this column must be capped at a maximum width of 680px for readability. The remaining space within the 8-column area can be used for breathing room or pull quotes.
+
+
+Breadcrumb
+
+
+Category Chip
+
+
+H1 Headline (display-lg = 36px)
+
+
+Subtitle
+
+
+Author Byline (expanded with avatar 56px)
+
+
+Hero Image (full 8-column width, 16:9, 1200px minimum)
+
+
+Image Caption
+
+
+Article Body Paragraph 1-2 (capped at 680px width)
+
+
+Ad Slot DA3 (300x250): After paragraph 3
+
+
+Article Body Paragraph 3 onward
+
+
+Ad Slot DA4 (300x250): After paragraph 9
+
+
+Remaining body
+
+
+Tag Chips Row
+
+
+Author Bio Block (expanded)
+
+
+Ad Slot DA5 (Responsive Native): Before recommendations
+
+
+Related Stories Module (3-column grid of 6 stories)
+
+
+Trending Stories Module
+
+Right column (4 columns wide, the sidebar):
+
+
+Social Share Rail (sticky, sits at top of sidebar): Vertical share buttons
+
+
+Ad Slot DA2 (300x600): Sticky sidebar ad
+
+
+Mini Trending Module (below sticky ad, scrolls with page)
+
+
+Most Read Module
+
+
+Section 3: Footer Strip (full-width)
+
+
+Footer Navigation
+
+
+5.2.3 Article Body Reading Specifications
+
+
+Mobile body width: 100% with 16px gutter on each side
+
+
+Desktop body width: Maximum 680px content column inside the 8-column area
+
+
+Body font size: 17px mobile, 18px desktop
+
+
+Line height: 1.7 on Marathi body (mandatory minimum)
+
+
+Paragraph spacing: 16px between paragraphs
+
+
+Optimal characters per line: 65-75 on Marathi text
+
+
+
+5.3 Category and Hub Pages
+
+Category pages must function as mini editorial homepages, not archive lists. They are critical for SEO topical authority and Discover reinforcement.
+
+
+5.3.1 Mobile Category Page Structure
+
+Build the Figma frame at 375px width. Single vertical column.
+
+
+Order
+Block
+Specification
+1
+Sticky Header
+Same as homepage.
+2
+Category Header
+Category name as H1. Optional intro copy (50-150 words for SEO).
+3
+Category Hero
+Single featured story. Same as homepage hero spec.
+4
+Latest Feed
+5 most recent stories. Standard cards.
+5
+Ad Slot C1
+300x250. Reserved space.
+6
+Trending in Category
+5 stories, numbered.
+7
+Most Read
+5 stories, compact list.
+8
+Ad Slot C2
+300x250 or Native.
+9
+Subcategory Modules
+If subcategories exist (e.g., Pune &gt; Crime). Mini editorial blocks.
+10
+Evergreen Stories
+Editor-curated timeless content. 4-6 cards.
+11
+Topic Cluster Links
+Related tags and entities.
+12
+Ad Slot C3
+Multiplex/Native.
+13
+Footer
+Standard.
+
+
+
+
+5.3.2 Desktop Category Page Structure
+
+Build the Figma frame at 1440px width. Uses 12-column grid split 8+4.
+
+
+Section 1: Header Strip (full-width)
+
+
+Sticky Header
+
+
+Breaking News Strip
+
+
+Ad Slot DC1 (970x250): Top billboard
+
+
+Section 2: Category Content Area (12-column grid split 8+4)
+
+Left column (8 columns wide):
+
+
+Category Header (H1, intro copy)
+
+
+Category Hero (full 8-column width)
+
+
+Latest Feed (2-column grid of 6 stories)
+
+
+Ad Slot DC3 (728x90 or 300x250): Between content modules
+
+
+Trending in Category (numbered list)
+
+
+Subcategory Modules (if applicable)
+
+
+Evergreen Stories
+
+
+Topic Cluster Links
+
+Right column (4 columns wide):
+
+
+Ad Slot DC2 (300x600): Sticky sidebar
+
+
+Most Read Module (below sticky ad)
+
+
+Recently Updated
+
+
+Section 3: Footer Strip (full-width)
+
+
+
+5.4 Tag and Topic Cluster Pages
+
+Tag pages consolidate semantic relationships for Google. They should not be thin archive pages. Each tag page must have visible editorial value.
+
+
+5.4.1 Required Elements
+
+
+Tag name as H1 with intro copy (30-100 words explaining the topic)
+
+
+Latest stories tagged with this entity (10 stories)
+
+
+Most read stories under this tag (5 stories)
+
+
+Related tags (semantic suggestions)
+
+
+Ad slots same as category pages (C1, C2, C3 on mobile; DC1, DC2, DC3 on desktop)
+
+
+5.4.2 Layout
+
+Tag pages reuse the Category page layout (Section 5.3). The structural difference is content depth: tag pages typically have less editorial curation than category pages, so subcategory modules and evergreen sections may be omitted.
+
+
+5.4.3 Thin Tag Protection
+
+Tags with fewer than 5 articles must be designed for graceful handling. The empty state must be visually different from a populated tag and must include a noindex tag (Tech responsibility) and contextual recommendations to keep the user engaged.
+
+
+5.5 Author Pages
+
+Author pages are foundational for E-E-A-T signals. Most regional publishers ignore them. Prajavarta will not.
+
+
+5.5.1 Required Elements
+
+
+Author photo (200px square)
+
+
+Author name as H1
+
+
+Role and expertise area (e.g., Senior Reporter, Pune Politics)
+
+
+Author bio (100-300 words)
+
+
+Social media links (Twitter, LinkedIn, Email)
+
+
+Years of experience and credentials
+
+
+Latest stories by author (10 stories)
+
+
+Most read by this author (5 stories)
+
+
+Categories the author covers
+
+
+5.5.2 Layout
+
+Author pages reuse the Category page layout. The Category Header block is replaced with an Author Profile block (photo, name, bio, social links). Ad slots follow the C/DC scheme.
+
+
+5.6 Static Trust Pages
+
+These pages exist for trust, transparency, and policy compliance. Single shared template.
+
+
+5.6.1 Required Pages
+
+
+About Us
+
+
+Contact (with form, address, phone, email)
+
+
+Privacy Policy
+
+
+Editorial Policy
+
+
+Fact Check Policy
+
+
+Corrections Policy
+
+
+Advertise With Us
+
+
+Terms and Conditions
+
+
+Cookie Policy and Consent (DPDP Act 2023 compliance)
+
+
+5.6.2 Layout
+
+Single-column layout with H1, body content (text-primary), occasional H2 sections, and standard footer. No ads on Privacy, Editorial, Fact Check, or Corrections policy pages (trust signal).
+
+
+5.7 Search Results Page
+
+
+5.7.1 Required Elements
+
+
+Search bar at top (pre-filled with query)
+
+
+Result count (e.g., 47 results for &quot;Pune rain&quot;)
+
+
+Filter chips: All, News, Photos, Videos
+
+
+Sort options: Relevance, Latest
+
+
+Result cards (Standard Card component)
+
+
+Pagination (load more pattern preferred for mobile)
+
+
+No results state with suggestions
+
+
+Did you mean suggestion (if query has typos)
+
+
+
+6. Ad Placement Architecture
+
+Ads are part of the layout, not bolted on after design. Every ad placeholder must exist in Figma with reserved dimensions, slot ID labels, and sticky behavior annotations.
+
+
+6.1 Master Ad Slot Reference Table
+
+Single source of truth for ad placement. Every team (Design, Tech, SEO, Ad Ops) references this table. Slot names match Figma layer names match GAM ad unit names.
+
+
+6.1.1 Homepage Ad Slots
+
+
+Slot ID
+Page
+Position
+Size
+Sticky
+Device
+H1
+Homepage
+Below header
+320x50 or 300x250
+No
+Mobile
+H2
+Homepage
+After hero block
+300x250
+No
+Mobile
+H3
+Homepage
+After 2-3 category blocks
+300x250 or Native
+No
+Mobile
+H4
+Homepage
+Above footer
+Multiplex/Native
+No
+Mobile
+DH1
+Homepage
+Below nav
+970x250
+No
+Desktop
+DH2
+Homepage
+Sidebar top
+300x600
+Yes
+Desktop
+DH3
+Homepage
+Between category sections
+728x90 or 300x250
+No
+Desktop
+DH4
+Homepage
+Before footer
+Responsive Native
+No
+Desktop
+
+
+
+
+6.1.2 Article Page Ad Slots
+
+
+Slot ID
+Page
+Position
+Size
+Sticky
+Device
+A1
+Article
+Immediately below hero image
+300x250
+No
+Mobile
+A2
+Article
+After paragraph 2
+300x250
+No
+Mobile
+A3
+Article
+After paragraph 7-8
+300x250 or Native
+No
+Mobile
+A4
+Article
+Before related stories
+Multiplex/Native
+No
+Mobile
+A5
+Article
+Bottom anchor
+320x50
+Yes
+Mobile
+A6
+Article
+Page transition trigger
+Vignette
+No
+Mobile
+DA1
+Article
+Below article headline area
+970x250
+No
+Desktop
+DA2
+Article
+Right sidebar
+300x600
+Yes
+Desktop
+DA3
+Article
+After paragraph 3
+300x250
+No
+Desktop
+DA4
+Article
+After paragraph 9
+300x250
+No
+Desktop
+DA5
+Article
+Before recommendations
+Responsive Native
+No
+Desktop
+
+
+
+
+6.1.3 Category Page Ad Slots
+
+
+Slot ID
+Page
+Position
+Size
+Sticky
+Device
+C1
+Category
+Below category hero
+300x250
+No
+Mobile
+C2
+Category
+Between content grids
+300x250 or Native
+No
+Mobile
+C3
+Category
+Before footer
+Responsive Native
+No
+Mobile
+DC1
+Category
+Below category nav
+970x250
+No
+Desktop
+DC2
+Category
+Sidebar
+300x600
+Yes
+Desktop
+DC3
+Category
+Between content modules
+728x90 or 300x250
+No
+Desktop
+
+
+
+
+6.2 Ad Density Rules by Article Length
+
+Article ad density is tied to word count. This protects CWV, ad policy compliance, and reading experience.
+
+
+Article Length
+Allowed Slots
+Reasoning
+Under 300 words
+A1, A5 only
+Short articles cannot accommodate inline ads without harming UX.
+300-600 words
+A1, A2, A4, A5
+Two inline placements fit comfortably. A3 skipped.
+600-1000 words
+A1, A2, A3, A4, A5
+Standard ad density.
+1000+ words
+All slots (A1-A6)
+Long-form articles can accommodate vignette transitions.
+
+
+
+
+6.2.1 Hard Density Caps
+
+
+Minimum gap between two inline ads: 4 paragraphs
+
+
+Maximum ad density: 1 ad per 200 words of body content
+
+
+First ad cannot appear before the hero image is visible
+
+
+No ad may appear between the H1 and the first paragraph
+
+
+Sticky anchor (A5) is the only sticky element on mobile article pages
+
+
+6.3 Figma Placeholder Standards
+
+
+6.3.1 Required Annotations
+
+Every ad placeholder in Figma must visually display:
+
+
+Slot ID (e.g., &quot;A2&quot;)
+
+
+Full slot name (e.g., &quot;Mobile Article Inline Ad 1&quot;)
+
+
+Ad size (e.g., &quot;300 x 250&quot;)
+
+
+Sticky behavior (Yes/No)
+
+
+Device visibility (Mobile/Desktop)
+
+
+Reserved container height
+
+
+6.3.2 Layer Naming Convention in Figma
+
+
+Format: ad-slot-[SlotID]-[size]
+
+
+Example: ad-slot-A2-300x250
+
+
+Example: ad-slot-DH1-970x250
+
+
+6.3.3 Advertisement Label
+
+Every ad container must include an &quot;Advertisement&quot; label above the ad area. This label is part of the reserved height.
+
+
+Label text: &quot;जाहिरात&quot; (Marathi for Advertisement) or &quot;Advertisement&quot;
+
+
+Label style: caption token, text-tertiary, uppercase
+
+
+Label height: 20px
+
+
+Total reserved height: ad height + 20px label
+
+
+
+7. State Specifications
+
+Every template must include the following states as Figma frames.
+
+
+7.1 Loading States
+
+Loading states use skeleton components, not spinners. Skeletons must match the layout structure they&apos;re replacing.
+
+
+7.1.1 Required Skeleton Components
+
+
+Hero card skeleton (image block + 2 text bars)
+
+
+Standard card skeleton (image block + 2 text bars)
+
+
+Article body skeleton (4 text bars + image block + 4 more text bars)
+
+
+Trending list skeleton (5 numbered list items)
+
+
+Author byline skeleton (circle + 2 text bars)
+
+
+7.1.2 Skeleton Animation
+
+
+Type: Subtle shimmer (left-to-right gradient sweep)
+
+
+Duration: 1.5 seconds per cycle
+
+
+Color: surface-tertiary base, surface-secondary highlight
+
+
+Reduced motion: Static gray block (no animation) when prefers-reduced-motion is set
+
+
+7.2 Empty States
+
+
+7.2.1 Required Empty State Templates
+
+
+Search no results
+
+
+Tag with no articles
+
+
+Author with no recent stories
+
+
+Saved articles empty
+
+
+7.2.2 Empty State Anatomy
+
+
+Illustration or icon (96px, brand-primary-light)
+
+
+Heading (heading-lg, text-primary)
+
+
+Body explanation (body-md, text-secondary)
+
+
+Call-to-action button or link
+
+
+Suggested next action block (e.g., trending stories)
+
+
+7.3 Error States
+
+
+Page failed to load (with reload button)
+
+
+Network offline (with offline-friendly cached suggestions)
+
+
+Form validation error (inline, per field)
+
+
+Rate limit error (with retry timer)
+
+
+Generic 500 server error
+
+
+7.4 404 Page
+
+
+7.4.1 Required Elements
+
+
+Clear messaging that the page was not found
+
+
+Search input prominently displayed
+
+
+Trending stories module (5 stories)
+
+
+Top categories shortcut links
+
+
+Link to homepage
+
+
+Standard header and footer
+
+
+
+8. Accessibility Standards
+
+All designs must meet WCAG 2.1 Level AA standards as a minimum.
+
+
+8.1 Color Contrast
+
+
+Element
+Minimum Ratio
+Notes
+Body text on background
+4.5:1
+Body tokens on surface colors
+Large text on background
+3:1
+Display and heading tokens (24px+ at 700 weight)
+UI component borders
+3:1
+Buttons, form inputs, focus indicators
+Iconography
+3:1
+Functional icons (decorative exempt)
+
+
+
+
+8.2 Focus States
+
+Every interactive element must have a visible focus state designed in Figma.
+
+
+Width: 2px
+
+
+Color: brand-primary
+
+
+Offset from element: 2px
+
+
+Border-radius: Match the element&apos;s border-radius + 2px
+
+
+8.3 Touch Targets
+
+Minimum tap target size on mobile is 44x44 pixels for buttons, links, icons, and any interactive element.
+
+
+8.4 Alt Text Standards
+
+
+Hero images: Required descriptive alt text (50-150 characters)
+
+
+Inline images: Required descriptive alt text
+
+
+Author photos: Required (typically the author&apos;s name)
+
+
+Decorative icons: alt=&quot;&quot; (empty, marked decorative)
+
+
+Functional icons: Required descriptive alt text
+
+
+8.5 Reduced Motion
+
+All animations must have a reduced-motion alternative. Skeleton shimmers become static blocks. Auto-scrolling tickers pause. Carousel auto-advance disables.
+
+
+8.6 Text Resizing
+
+All text must remain readable when the user zooms to 200%. No fixed-height containers that clip text. No fixed font sizes that ignore user preferences.
+
+
+8.7 Dark Mode
+
+Dark mode is not in scope for v1 launch but tokens must be designed to support a future dark mode without rework. Use semantic color tokens (text-primary, surface-primary), not hex values directly in components.
+
+
+
+9. Article Page Variants
+
+Articles vary significantly. Each variant requires its own Figma frame.
+
+
+9.1 Standard Text Article
+
+
+Hero image, headline, body, related stories
+
+
+Default specified in Section 5.2
+
+
+Use for: news reports, opinion pieces, analysis
+
+
+9.2 Photo Gallery Article
+
+
+Gallery component above body text
+
+
+Lightbox view on click/tap
+
+
+Image count indicator (e.g., 1/12)
+
+
+Captions per image
+
+
+Use for: events, photo essays, sports coverage
+
+
+9.3 Video Embed Article
+
+
+Video player as hero (16:9 reserved aspect ratio)
+
+
+Video poster image (1200px+ for Discover)
+
+
+Body text follows video
+
+
+No A1 ad slot if video is the hero
+
+
+Use for: interviews, press conferences, video reports
+
+
+9.4 Live Blog Article
+
+
+Live indicator at top (red dot, animated)
+
+
+Reverse chronological updates (newest first)
+
+
+Timestamp per update
+
+
+Auto-refresh every 60 seconds
+
+
+Use for: breaking news, sports matches, election results
+
+
+9.5 Long-Form Investigative Article
+
+
+Reading progress bar at top
+
+
+Estimated read time prominent in byline
+
+
+Pull quotes between sections
+
+
+Section navigation (jump to section)
+
+
+Author bio expanded with credentials
+
+
+Use for: investigations, deep analysis, features over 1500 words
+
+
+9.6 Sponsored/Branded Content
+
+
+Visible sponsored label at top
+
+
+Sponsor brand name visible
+
+
+Visually distinct from editorial (surface-secondary background)
+
+
+Disclosure block above the body
+
+
+Use for: branded content partnerships, paid features
+
+
+
+10. Design Team Definition of Done
+
+A template is not complete until every item below is true.
+
+
+10.1 Per-Template Checklist
+
+
+Mobile frame at 375px width complete with all states
+
+
+Tablet frame at 768px width complete with all states
+
+
+Desktop frame at 1440px width complete with all states
+
+
+Loading state frame complete (skeleton)
+
+
+Empty state frame complete (where applicable)
+
+
+Error state frame complete (where applicable)
+
+
+All ad placeholders present with reserved dimensions
+
+
+All ad placeholders labeled with slot ID and size
+
+
+All ad placeholders use standard layer naming convention
+
+
+All text uses tokens from the type system
+
+
+All colors use tokens from the color system
+
+
+All spacing uses values from the spacing scale
+
+
+All interactive elements have hover, focus, active, disabled states
+
+
+All images have aspect ratio specifications
+
+
+All images have alt text annotation fields
+
+
+Touch targets meet 44x44px minimum on mobile
+
+
+Color contrast meets WCAG 2.1 AA
+
+
+Focus indicators designed for all interactive elements
+
+
+No sticky element conflicts (only one sticky per viewport)
+
+
+No ad sits between H1 and first paragraph
+
+
+Marathi line-height is 1.6 minimum on body text
+
+
+10.2 Design System Library Checklist
+
+
+All color tokens published as Figma styles
+
+
+All type tokens published as Figma text styles
+
+
+All spacing tokens documented in a reference frame
+
+
+All components published with all variants
+
+
+All components have documentation frames showing usage
+
+
+Library shared with Tech team for inspection
+
+
+Library version locked before page-level work begins
+
+
+10.3 Cross-Team Review Gates
+
+Before handoff to Tech, the following reviews are mandatory:
+
+
+SEO Review: Heading hierarchy, image specs, internal linking placement, schema-supported content blocks
+
+
+Tech Review: CWV impact, complexity, render strategy
+
+
+Ad Ops Review: Ad placeholder layout for GAM compatibility
+
+
+Editorial Review: Content workflow compatibility
+
+
+
+11. Handoff Protocol to Tech Team
+
+
+11.1 Handoff Package Contents
+
+
+Figma file with Dev Mode enabled and all measurements visible
+
+
+Published Figma library with all tokens accessible
+
+
+Loom video walkthrough of each template (5-10 minutes per template)
+
+
+Component documentation frames showing all states and variants
+
+
+Asset export package (icons as SVG, images optimized as WebP/AVIF)
+
+
+Reference document mapping each ad slot to its slot ID
+
+
+Decision log noting any deviations from this specification
+
+
+11.2 Handoff Meeting Agenda
+
+A live handoff meeting must occur for each major template. Recommended agenda (60 minutes):
+
+
+Walk through the template at all three breakpoints (15 min)
+
+
+Review all states (loading, empty, error) (10 min)
+
+
+Review ad placeholder positions and reserved dimensions (10 min)
+
+
+Review responsive behavior and breakpoint logic (10 min)
+
+
+Review component dependencies (10 min)
+
+
+Tech team Q&amp;A and edge case discussion (5 min)
+
+
+11.3 Post-Handoff Support
+
+
+Edge case clarification (Slack response within 4 hours)
+
+
+Spec adjustments based on technical constraints (joint decision with Tech)
+
+
+Pre-launch design QA (mandatory)
+
+
+Post-launch iteration based on real user data
+
+
+
+12. Cross-Team Coordination
+
+
+12.1 Communication Matrix
+
+
+Channel
+Cadence
+Purpose
+Cross-team standup
+Weekly (Mondays)
+Status update, blockers, dependencies
+Design-Tech sync
+Twice weekly
+Active handoff coordination
+Design-SEO sync
+Weekly
+Template SEO review, schema-supported elements
+Design-Ad Ops sync
+Bi-weekly
+Ad slot positioning, GAM coordination
+Slack channel
+Async, daily
+Real-time questions, decisions, blockers
+Decision log
+Updated continuously
+All design decisions and reasoning
+
+
+
+
+12.2 Single Points of Contact
+
+Each team designates one primary contact. This prevents diluted ownership and conflicting messages.
+
+
+Design Team Lead: [Designate name]
+
+
+Tech Team Lead: [Designate name]
+
+
+SEO Team Lead: Harshal Patil
+
+
+Ad Ops Lead: [Designate name]
+
+
+Editorial Lead: [Designate name]
+
+
+12.3 Decision Authority
+
+When teams disagree, decisions are escalated as follows:
+
+
+Design vs Tech on visual fidelity vs performance: Decide jointly with bias toward CWV
+
+
+Design vs SEO on layout vs SEO benefit: Decide jointly with bias toward SEO when at parity
+
+
+Design vs Ad Ops on ad density: Decide jointly with bias toward UX
+
+
+Unresolved disputes: Project lead arbitrates
+
+
+
+13. Phase Map and Timeline
+
+
+13.1 Phase 1: Foundation (Weeks 1-2)
+
+
+Spacing system tokens
+
+
+Typography system tokens (Marathi-tested)
+
+
+Color system tokens
+
+
+Iconography decisions and library setup
+
+
+Component inventory finalized
+
+
+13.2 Phase 2: Component Library (Weeks 3-4)
+
+
+All components built in Figma with variants
+
+
+All components documented with usage frames
+
+
+Library published and reviewed by Tech
+
+
+Skeleton states designed for all card components
+
+
+13.3 Phase 3: Template Design (Weeks 5-7)
+
+
+Homepage at all breakpoints with all states
+
+
+Article page at all breakpoints with all variants
+
+
+Category page at all breakpoints
+
+
+Tag, Author, Static, Search, 404 pages
+
+
+All ad placeholders integrated
+
+
+13.4 Phase 4: Review and Refinement (Week 8)
+
+
+SEO team review approval
+
+
+Tech team review approval
+
+
+Ad Ops review approval
+
+
+Editorial review approval
+
+
+Iteration on review feedback
+
+
+13.5 Phase 5: Handoff (Week 9)
+
+
+Handoff packages per template
+
+
+Loom walkthroughs recorded
+
+
+Live handoff meetings conducted
+
+
+Asset export packages delivered
+
+
+13.6 Phase 6: Build Support (Weeks 10-13)
+
+
+Edge case clarification within 4 hours
+
+
+Spec adjustment for technical constraints
+
+
+Pre-launch design QA on staging
+
+
+13.7 Phase 7: Launch and Iterate (Week 14+)
+
+
+Post-launch design audit
+
+
+User-data-driven iteration plan
+
+
+Continuous component library evolution
+
+
+
+14. Quality Assurance Checklist
+
+Before any template moves to production, the Design team performs a final QA pass on staging.
+
+
+14.1 Visual Fidelity
+
+
+Typography matches design tokens at all breakpoints
+
+
+Colors match design tokens
+
+
+Spacing matches design tokens
+
+
+Components render identically to Figma
+
+
+Images load at correct aspect ratios
+
+
+Marathi text renders correctly (no broken conjuncts)
+
+
+14.2 Responsive Behavior
+
+
+Mobile (375px) matches Figma mobile frame
+
+
+Tablet (768px) matches Figma tablet frame
+
+
+Desktop (1440px) matches Figma desktop frame
+
+
+Wide desktop (1920px) centers content correctly
+
+
+No horizontal scroll at any breakpoint
+
+
+Touch targets are 44x44 minimum on mobile
+
+
+14.3 Ad Placement
+
+
+All ad slots render with reserved dimensions
+
+
+No CLS observed on ad load (LayoutShift score 0)
+
+
+Slot IDs in DOM match Figma layer names
+
+
+Sticky behavior matches spec
+
+
+Ad density rules respected per article length
+
+
+14.4 States
+
+
+Loading skeletons appear before content loads
+
+
+Empty states render correctly when applicable
+
+
+Error states render correctly on simulated failures
+
+
+404 page renders correctly
+
+
+14.5 Accessibility
+
+
+Keyboard navigation works through all interactive elements
+
+
+Focus states visible on all interactive elements
+
+
+Screen reader announces content correctly (VoiceOver iOS, TalkBack Android)
+
+
+Color contrast passes Lighthouse audit
+
+
+Reduced motion preference respected
+
+
+Text remains readable at 200% zoom
+
+
+14.6 Performance
+
+
+LCP under 2.5s on mobile (4G simulated)
+
+
+CLS under 0.05
+
+
+INP under 200ms
+
+
+Lighthouse mobile score 90+
+
+
+Hero image is the LCP element
+
+
+
+15. Glossary
+
+
+Term
+Definition
+AVIF
+Modern image format with better compression than WebP.
+Above-the-fold
+Content visible without scrolling on first page load.
+CLS
+Cumulative Layout Shift. Core Web Vital measuring unexpected layout movement.
+CMS
+Content Management System. The platform editors use to publish articles.
+CTR
+Click-Through Rate. Percentage of impressions that result in clicks.
+CWV
+Core Web Vitals. Google&apos;s user experience metrics: LCP, CLS, INP.
+Devanagari
+The script used to write Marathi (and Hindi).
+Discover
+Google Discover, a personalized feed in the Google app.
+DPDP Act
+Digital Personal Data Protection Act 2023, India&apos;s data protection law.
+E-E-A-T
+Experience, Expertise, Authoritativeness, Trustworthiness. Google&apos;s quality signals.
+GAM
+Google Ad Manager. Platform that serves ads to designated slots.
+Hero
+The largest, most prominent visual element on a page.
+INP
+Interaction to Next Paint. Core Web Vital measuring responsiveness.
+LCP
+Largest Contentful Paint. Core Web Vital measuring main content load speed.
+Multiplex Ad
+Google ad format showing multiple ads in a grid.
+RPM
+Revenue Per Mille (per thousand impressions).
+Skeleton
+Placeholder UI that matches the layout of content while it loads.
+Slot ID
+Unique identifier for an ad placement (e.g., A2, DH1).
+Sticky
+An element that remains in viewport position while user scrolls.
+Token
+A named design value (color, size, spacing) that can be referenced centrally.
+Vignette Ad
+Full-screen interstitial ad shown between page transitions.
+WCAG 2.1 AA
+Web Content Accessibility Guidelines, version 2.1, Level AA.
+WebP
+Modern image format with better compression than JPEG/PNG.
+
+
+
+
+
+End of Document
+
+

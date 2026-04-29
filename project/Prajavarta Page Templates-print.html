@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Prajavarta · Page Templates · Print</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  body {
+    background: #EFEFEF;
+    margin: 0;
+    padding: 24px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    background: #fff;
+    margin: 0 auto 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    page-break-after: always;
+    break-after: page;
+    overflow: hidden;
+    position: relative;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  .page-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid #E0E3E7;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: #F7F8FA;
+  }
+  .page-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1F4E78;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.04em;
+  }
+  .page-header .meta {
+    font-size: 11px;
+    color: #6B6B6B;
+    font-family: ui-monospace, monospace;
+  }
+  .page-mobile { width: 411px; }   /* 375 + 36px page chrome */
+  .page-desktop { width: 1480px; } /* 1440 + 40px page chrome */
+  .stage { padding: 18px; display: flex; justify-content: center; }
+  .stage-mobile > div { width: 375px !important; }
+  .stage-desktop > div { width: 1440px !important; }
+
+  .cover {
+    padding: 80px 60px;
+    width: 1480px;
+    min-height: 900px;
+    background: linear-gradient(135deg, #1F4E78 0%, #163A5C 100%);
+    color: #fff;
+  }
+  .cover h1 {
+    font-family: "Noto Sans Devanagari", "Inter", sans-serif;
+    font-size: 64px;
+    font-weight: 800;
+    margin: 0 0 16px;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  .cover .sub {
+    font-size: 22px;
+    opacity: 0.85;
+    max-width: 800px;
+    line-height: 1.5;
+    margin-bottom: 60px;
+  }
+  .cover .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 48px;
+    max-width: 900px;
+  }
+  .cover .grid .item {
+    border-left: 3px solid #D4A017;
+    padding-left: 16px;
+  }
+  .cover .grid .item .k { font-size: 11px; letter-spacing: 0.12em; opacity: 0.65; text-transform: uppercase; margin-bottom: 6px; font-family: ui-monospace, monospace; }
+  .cover .grid .item .v { font-size: 18px; font-weight: 600; line-height: 1.4; }
+  .cover .footer-meta { position: absolute; bottom: 60px; left: 60px; right: 60px; display: flex; justify-content: space-between; font-size: 13px; opacity: 0.6; font-family: ui-monospace, monospace; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .page { box-shadow: none; margin: 0; }
+    @page { margin: 10mm; }
+    @page mobile-page { size: 130mm 700mm; margin: 0; }
+    @page desktop-page { size: 420mm 1000mm; margin: 0; }
+    .page-mobile { page: mobile-page; }
+    .page-desktop { page: desktop-page; }
+    .page-cover { page: desktop-page; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="parts.jsx"></script>
+<script type="text/babel" src="pages/mobile-homepage.jsx"></script>
+<script type="text/babel" src="pages/desktop-homepage.jsx"></script>
+<script type="text/babel" src="pages/mobile-article.jsx"></script>
+<script type="text/babel" src="pages/desktop-article.jsx"></script>
+<script type="text/babel" src="pages/category.jsx"></script>
+<script type="text/babel" src="pages/author.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+function Page({ id, title, section, kind, children }) {
+  return (
+    <div className={`page page-${kind}`}>
+      <div className="page-header">
+        <h2>{id} · {title}</h2>
+        <div className="meta">{section} · {kind === "mobile" ? "375 × auto" : "1440 × auto"}</div>
+      </div>
+      <div className={`stage stage-${kind}`}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function CoverPage() {
+  return (
+    <div className="page page-cover">
+      <div className="cover">
+        <div style={{fontFamily:"ui-monospace, monospace", fontSize:13, letterSpacing:"0.12em", opacity:0.65, marginBottom:32}}>PRAJAVARTA · DESIGN TEAM SPECIFICATION · v1.0</div>
+        <h1 className="mr">प्रजावार्ता<br/>Page Templates</h1>
+        <div className="sub mr">Section 5 deliverables — every page template in mobile and desktop, with annotated ad slots, spacing tokens, and grid breakpoints from the master specification.</div>
+        <div className="grid">
+          <div className="item"><div className="k">Section 5.1</div><div className="v">Homepage · Mobile + Desktop</div></div>
+          <div className="item"><div className="k">Section 5.2</div><div className="v">News Article · Mobile + Desktop</div></div>
+          <div className="item"><div className="k">Section 5.3</div><div className="v">Category & Hub · Mobile + Desktop</div></div>
+          <div className="item"><div className="k">Section 5.4</div><div className="v">Tag & Topic Cluster · Mobile + Desktop</div></div>
+          <div className="item"><div className="k">Section 5.5</div><div className="v">Author Pages · Desktop</div></div>
+          <div className="item"><div className="k">Tokens</div><div className="v">Section 4 design system · Section 6 ad slots</div></div>
+        </div>
+        <div className="footer-meta">
+          <span>Prepared for Design Team</span>
+          <span>2026 · v1.0</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <CoverPage/>
+      <Page id="5.1.1" title="Mobile Homepage" section="§ 5.1 Homepage" kind="mobile">
+        <MobileHomepage/>
+      </Page>
+      <Page id="5.1.2" title="Desktop Homepage · 12-col grid 8+4" section="§ 5.1 Homepage" kind="desktop">
+        <DesktopHomepage/>
+      </Page>
+      <Page id="5.2.1" title="Mobile Article Page" section="§ 5.2 News Article" kind="mobile">
+        <MobileArticle/>
+      </Page>
+      <Page id="5.2.2" title="Desktop Article · 8-col reading column · 4-col sidebar" section="§ 5.2 News Article" kind="desktop">
+        <DesktopArticle/>
+      </Page>
+      <Page id="5.3.1" title="Mobile Category Page" section="§ 5.3 Category & Hub" kind="mobile">
+        <MobileCategory/>
+      </Page>
+      <Page id="5.3.2" title="Desktop Category Page" section="§ 5.3 Category & Hub" kind="desktop">
+        <DesktopCategory/>
+      </Page>
+      <Page id="5.4 M" title="Mobile Tag · #मराठा आरक्षण" section="§ 5.4 Tag & Topic Cluster" kind="mobile">
+        <MobileCategory tag/>
+      </Page>
+      <Page id="5.4 D" title="Desktop Tag · #मराठा आरक्षण" section="§ 5.4 Tag & Topic Cluster" kind="desktop">
+        <DesktopCategory tag/>
+      </Page>
+      <Page id="5.5" title="Author Profile · Desktop" section="§ 5.5 Author Pages" kind="desktop">
+        <AuthorPage/>
+      </Page>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+// Auto-print after fonts + JSX ready
+(async () => {
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch(e) {}
+  }
+  await new Promise(r => setTimeout(r, 800));
+  window.print();
+})();
+</script>
+</body>
+</html>
