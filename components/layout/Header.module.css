@@ -74,7 +74,7 @@
   font-size: 14px;
   font-weight: 500;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .navLink {
