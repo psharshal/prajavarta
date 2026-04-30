@@ -146,8 +146,8 @@ export default function HomePage() {
             </div>
 
             {/* Desktop leaderboard between sections */}
-            <div className={layout.desktopOnly} style={{ display: 'flex', justifyContent: 'center' }}>
-              <Ad id="DH3" name="Desktop Between Categories" size="728×90" width={728} height={90} />
+            <div className={layout.desktopOnly} style={{ textAlign: 'center' }}>
+              <Ad id="DH3" name="Desktop Between Categories" size="728×90" width={728} height={90} style={{ display: 'inline-block' }} />
             </div>
 
             {/* Mobile ad H2 */}
@@ -163,6 +163,26 @@ export default function HomePage() {
             {/* Mobile ad H3 */}
             <div className={layout.mobileOnly}>
               <Ad id="H3" name="Mobile Homepage After Categories" size="300×250 / Native" height={250} fluid />
+            </div>
+
+            {/* Mobile mini trending — visible only on mobile (sidebar hides it on desktop) */}
+            <div className={layout.mobileOnly} style={{ background: 'var(--surface-secondary)', padding: '16px 20px', borderTop: '3px solid var(--brand-primary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-live)', display: 'inline-block' }} />
+                <span className="mr" style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--color-live)', textTransform: 'uppercase' }}>
+                  ट्रेंडिंग आता
+                </span>
+              </div>
+              <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {MINI_TRENDING.map((h, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: i < MINI_TRENDING.length - 1 ? '1px solid var(--border-default)' : 'none' }}>
+                    <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--brand-primary)', fontFamily: 'var(--font-en)', lineHeight: 1.1, minWidth: 28, flexShrink: 0 }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="mr" style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: 'var(--text-primary)' }}>{h}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
 
             {/* Recommended */}
@@ -183,12 +203,8 @@ export default function HomePage() {
 
           {/* ── Sidebar (desktop only) ── */}
           <aside className={layout.sidebar}>
-            <div style={{ position: 'sticky', top: 72 }}>
-              <Ad id="DH2" name="Desktop Sidebar Top" size="300×600" width={300} height={600} sticky />
-              <p style={{ fontSize: 10, color: 'var(--text-tertiary)', fontFamily: 'ui-monospace, monospace', marginTop: 6 }}>
-                ↑ sticks at viewport top while scrolling
-              </p>
-            </div>
+            {/* Fold 1: 300×250 */}
+            <Ad id="DH2a" name="Desktop Sidebar Fold 1" size="300×250" width={300} height={250} />
 
             <div style={{ padding: 20, border: '1px solid var(--border-default)' }}>
               <CategoryUnderline name="Maharashtra" label="मिनी ट्रेंडिंग" />
@@ -198,6 +214,9 @@ export default function HomePage() {
                 ))}
               </ol>
             </div>
+
+            {/* Fold 2: 300×600 */}
+            <Ad id="DH2b" name="Desktop Sidebar Fold 2" size="300×600" width={300} height={600} />
 
             <Newsletter />
 
@@ -211,6 +230,9 @@ export default function HomePage() {
                 ))}
               </ul>
             </div>
+
+            {/* Fold 3: 300×250 */}
+            <Ad id="DH2c" name="Desktop Sidebar Fold 3" size="300×250" width={300} height={250} />
           </aside>
 
         </div>

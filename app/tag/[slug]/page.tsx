@@ -116,8 +116,8 @@ export default function TagPage() {
             </div>
 
             {/* Desktop leaderboard */}
-            <div className={layout.desktopOnly} style={{ display: 'flex', justifyContent: 'center' }}>
-              <Ad id="DC3" name="Desktop Tag Between Modules" size="728×90" width={728} height={90} />
+            <div className={layout.desktopOnly} style={{ textAlign: 'center' }}>
+              <Ad id="DC3" name="Desktop Tag Between Modules" size="728×90" width={728} height={90} style={{ display: 'inline-block' }} />
             </div>
 
             {/* Trending */}
@@ -157,12 +157,7 @@ export default function TagPage() {
 
           {/* ── Sidebar ── */}
           <aside className={layout.sidebar}>
-            <div style={{ position: 'sticky', top: 72 }}>
-              <Ad id="DC2" name="Desktop Tag Sidebar" size="300×600" width={300} height={600} sticky />
-              <p style={{ fontSize: 10, color: 'var(--text-tertiary)', fontFamily: 'ui-monospace, monospace', marginTop: 6 }}>
-                ↑ sticky on scroll
-              </p>
-            </div>
+            <Ad id="DC2a" name="Desktop Tag Sidebar Fold 1" size="300×250" width={300} height={250} />
 
             <div style={{ padding: 20, border: '1px solid var(--border-default)' }}>
               <CategoryUnderline name={CAT} label="सर्वाधिक वाचलेले" />
@@ -185,7 +180,11 @@ export default function TagPage() {
               </ul>
             </div>
 
+            <Ad id="DC2b" name="Desktop Tag Sidebar Fold 2" size="300×600" width={300} height={600} />
+
             <Newsletter />
+
+            <Ad id="DC2c" name="Desktop Tag Sidebar Fold 3" size="300×250" width={300} height={250} />
           </aside>
         </div>
       </div>

@@ -131,13 +131,15 @@ export default function ArticlePage() {
               </div>
 
               {/* Mobile share buttons */}
-              <div className={layout.mobileOnly} style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                {SHARE_BUTTONS.map((b, i) => (
-                  <button key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '9px 6px', background: '#fff', border: `1px solid ${b.color}`, color: b.color, fontSize: 10, fontWeight: 600, borderRadius: 3, cursor: 'pointer' }}>
-                    {b.icon}
-                    <span>{b.label}</span>
-                  </button>
-                ))}
+              <div className={layout.mobileOnly} style={{ marginTop: 16 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {SHARE_BUTTONS.map((b, i) => (
+                    <button key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '9px 6px', background: '#fff', border: `1px solid ${b.color}`, color: b.color, fontSize: 10, fontWeight: 600, borderRadius: 3, cursor: 'pointer' }}>
+                      {b.icon}
+                      <span>{b.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -169,8 +171,8 @@ export default function ArticlePage() {
               </div>
 
               {/* Desktop ad DA3 */}
-              <div className={layout.desktopOnly} style={{ margin: '32px 0', display: 'flex', justifyContent: 'center' }}>
-                <Ad id="DA3" name="Desktop Article After P3" size="300×250" width={300} height={250} />
+              <div className={layout.desktopOnly} style={{ margin: '32px 0', textAlign: 'center' }}>
+                <Ad id="DA3" name="Desktop Article After P3" size="300×250" width={300} height={250} style={{ display: 'inline-block' }} />
               </div>
 
               {/* Key takeaways */}
@@ -224,8 +226,8 @@ export default function ArticlePage() {
               </div>
 
               {/* Desktop ad DA4 */}
-              <div className={layout.desktopOnly} style={{ margin: '32px 0', display: 'flex', justifyContent: 'center' }}>
-                <Ad id="DA4" name="Desktop Article After P9" size="300×250" width={300} height={250} />
+              <div className={layout.desktopOnly} style={{ margin: '32px 0', textAlign: 'center' }}>
+                <Ad id="DA4" name="Desktop Article After P9" size="300×250" width={300} height={250} style={{ display: 'inline-block' }} />
               </div>
 
               <p className="mr" style={{ fontSize: 'clamp(16px, 1.5vw, 18px)', lineHeight: 1.7, color: 'var(--text-primary)' }}>
@@ -297,12 +299,8 @@ export default function ArticlePage() {
               ))}
             </div>
 
-            <div style={{ position: 'sticky', top: 72 }}>
-              <Ad id="DA2" name="Desktop Article Sidebar" size="300×600" width={300} height={600} sticky />
-              <p style={{ fontSize: 10, color: 'var(--text-tertiary)', fontFamily: 'ui-monospace, monospace', marginTop: 6 }}>
-                ↑ sticks at viewport top during scroll
-              </p>
-            </div>
+            {/* Fold 1 */}
+            <Ad id="DA2a" name="Desktop Article Sidebar Fold 1" size="300×250" width={300} height={250} />
 
             <div style={{ padding: 20, border: '1px solid var(--border-default)' }}>
               <CategoryUnderline name="Maharashtra" label="मिनी ट्रेंडिंग" />
@@ -312,6 +310,9 @@ export default function ArticlePage() {
                 ))}
               </ol>
             </div>
+
+            {/* Fold 2 */}
+            <Ad id="DA2b" name="Desktop Article Sidebar Fold 2" size="300×600" width={300} height={600} />
 
             <div style={{ padding: 20, border: '1px solid var(--border-default)' }}>
               <CategoryUnderline name="Politics" label="सर्वाधिक वाचलेले" />
@@ -325,6 +326,9 @@ export default function ArticlePage() {
             </div>
 
             <Newsletter />
+
+            {/* Fold 3 */}
+            <Ad id="DA2c" name="Desktop Article Sidebar Fold 3" size="300×250" width={300} height={250} />
           </aside>
         </div>
       </div>
