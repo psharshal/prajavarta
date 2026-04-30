@@ -1,0 +1,9 @@
+.zoneTag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: ui-monospace, monospace;
+  padding: 4px 0;
+  opacity: 0.5;
+}
