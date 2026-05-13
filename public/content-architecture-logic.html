@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prajavarta - Content Recommendation and Architecture Logic</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #f5f5f5;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 64px 72px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+    }
+
+    /* Header */
+    .doc-header {
+      border-bottom: 4px solid #C62828;
+      padding-bottom: 28px;
+      margin-bottom: 48px;
+    }
+
+    .doc-logo {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #C62828;
+      margin-bottom: 14px;
+    }
+
+    .doc-title {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: #1a1a1a;
+      margin-bottom: 10px;
+    }
+
+    .doc-meta {
+      font-size: 12px;
+      color: #888;
+      display: flex;
+      gap: 18px;
+    }
+
+    .doc-meta span { display: flex; align-items: center; gap: 5px; }
+
+    /* Download button */
+    .download-btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 9px 20px;
+      background: #C62828;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      border-radius: 3px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .download-btn:hover { background: #b71c1c; }
+
+    /* Section headings */
+    h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #C62828;
+      margin: 48px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #f0f0f0;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 24px 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    p { margin-bottom: 12px; color: #333; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 13px;
+    }
+
+    thead tr {
+      background: #C62828;
+      color: #fff;
+    }
+
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+
+    tbody tr:nth-child(even) { background: #fafafa; }
+    tbody tr:hover { background: #fff5f5; }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    /* Code / placement blocks */
+    .placement {
+      background: #f7f7f7;
+      border: 1px solid #e0e0e0;
+      border-left: 4px solid #C62828;
+      padding: 16px 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12.5px;
+      line-height: 1.9;
+      margin: 16px 0 24px;
+      color: #333;
+    }
+
+    .placement .highlight {
+      background: #fff3e0;
+      color: #C62828;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 2px;
+    }
+
+    /* Info boxes */
+    .infobox {
+      padding: 16px 20px;
+      margin: 16px 0 24px;
+      border-left: 4px solid #C62828;
+      background: #fff5f5;
+      font-size: 13px;
+      color: #444;
+    }
+
+    .infobox.note {
+      border-left-color: #1565C0;
+      background: #e8f0fe;
+    }
+
+    .infobox.warning {
+      border-left-color: #E65100;
+      background: #fff3e0;
+    }
+
+    /* Tags / labels */
+    .label {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      margin: 2px 3px;
+    }
+
+    .label-red { background: #ffebee; color: #C62828; }
+    .label-blue { background: #e3f2fd; color: #1565C0; }
+    .label-green { background: #e8f5e9; color: #2E7D32; }
+    .label-grey { background: #f5f5f5; color: #555; }
+
+    /* Priority badges */
+    .priority {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #C62828;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 22px;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    .priority-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 13px;
+    }
+
+    /* Status indicators */
+    .status-exists::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2E7D32; margin-right: 6px; }
+    .status-partial::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #E65100; margin-right: 6px; }
+    .status-missing::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #C62828; margin-right: 6px; }
+
+    /* Breadcrumb example */
+    .breadcrumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f7f7f7;
+      border: 1px solid #e0e0e0;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      margin: 8px 0;
+    }
+
+    .breadcrumb .sep { color: #aaa; }
+    .breadcrumb .cat { color: #C62828; font-weight: 600; }
+
+    /* Section number */
+    .section-num {
+      display: inline-block;
+      background: #C62828;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 2px;
+      margin-right: 8px;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+    }
+
+    /* Footer */
+    .doc-footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 2px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: #fff; }
+      .page { box-shadow: none; margin: 0; padding: 40px 48px; }
+      .download-btn { display: none; }
+      h2 { page-break-after: avoid; }
+      table { page-break-inside: avoid; }
+      .placement { page-break-inside: avoid; }
+    }
+
+    @media (max-width: 768px) {
+      .page { padding: 32px 24px; margin: 0; }
+      .doc-title { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <div class="doc-logo">Prajavarta Media Pvt. Ltd. &nbsp;|&nbsp; Internal Document</div>
+    <h1 class="doc-title">Content Recommendation and<br>Architecture Logic</h1>
+    <div class="doc-meta">
+      <span>Version 1.1</span>
+      <span>May 2026</span>
+      <span>Based on live website structure</span>
+      <span>For: Leadership + Development Teams</span>
+    </div>
+    <button class="download-btn" onclick="window.print()">Download as PDF &darr;</button>
+  </div>
+
+
+  <!-- Section 0 -->
+  <h2><span class="section-num">00</span> Website Structure at a Glance</h2>
+
+  <table>
+    <thead>
+      <tr><th>Page</th><th>URL</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Homepage</td><td><code>/</code></td><td>Hero + 6 category feeds + trending</td></tr>
+      <tr><td>News Article</td><td><code>/news</code></td><td>Full article read experience</td></tr>
+      <tr><td>Category / City</td><td><code>/category/[slug]</code></td><td>Topic or city hub page</td></tr>
+      <tr><td>Tag</td><td><code>/tag/[slug]</code></td><td>Tag-filtered news feed</td></tr>
+      <tr><td>Author</td><td><code>/author/[slug]</code></td><td>Writer profile and articles</td></tr>
+      <tr><td>All News</td><td><code>/all-news</code></td><td>Full cross-category directory</td></tr>
+    </tbody>
+  </table>
+
+  <div class="infobox note">
+    6 page templates cover the entire site. One recommendation engine will serve all of them.
+  </div>
+
+
+  <!-- Section 1 -->
+  <h2><span class="section-num">01</span> Article Data Model</h2>
+
+  <table>
+    <thead>
+      <tr><th>Field</th><th>Example</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Main Category</td><td>महाराष्ट्र</td><td><span class="status-exists"></span>Exists</td></tr>
+      <tr><td>Topic / Sub-category</td><td>राजकारण</td><td><span class="status-exists"></span>Exists (breadcrumb level 3)</td></tr>
+      <tr><td>Tags</td><td>#विधानसभा, #फडणवीस</td><td><span class="status-exists"></span>Exists</td></tr>
+      <tr><td>Author</td><td>सुनील देशमुख</td><td><span class="status-exists"></span>Exists</td></tr>
+      <tr><td>Breaking Status</td><td>Breaking flag</td><td><span class="status-exists"></span>Exists</td></tr>
+      <tr><td>City</td><td>पुणे</td><td><span class="status-partial"></span>Implied via category only. Needs explicit field.</td></tr>
+      <tr><td>Area</td><td>हिंजवडी</td><td><span class="status-exists"></span>Managed via Tags (see Section 06)</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Breadcrumb structure in use:</strong></p>
+  <div class="breadcrumb">
+    मुख्यपृष्ठ <span class="sep">›</span>
+    <span class="cat">महाराष्ट्र</span> <span class="sep">›</span>
+    राजकारण
+  </div>
+
+  <div class="infobox warning" style="margin-top:16px;">
+    <strong>Dev action required:</strong> Add an explicit <code>city</code> field to the article schema. Areas (Hinjawadi, Baner, Wakad) are handled via Tags, no separate field needed.
+  </div>
+
+
+  <!-- Section 2 -->
+  <h2><span class="section-num">02</span> Homepage Hero Logic</h2>
+
+  <h3>Page layout in order</h3>
+  <ol style="padding-left:20px; font-size:13px; color:#333; line-height:2;">
+    <li>HeroCard - 1 primary story, full column width</li>
+    <li>Secondary Grid - 2 stories side by side (+ 1 mobile-only third card)</li>
+    <li>TrendingModule - Top 5 with heat-gradient rank badges and thumbnails</li>
+    <li>6 CategorySection blocks - Each has 1 hero + 3 supporting stories</li>
+    <li>Recommended Grid - 6 curated stories</li>
+    <li>Sidebar (desktop only) - Mini Trending + Most Read + City Updates</li>
+  </ol>
+
+  <h3>Hero selection priority</h3>
+  <table>
+    <thead>
+      <tr><th>Factor</th><th>Weight</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Breaking status</td><td><span class="label label-red">Highest</span></td></tr>
+      <tr><td>Editorial importance</td><td><span class="label label-red">High</span></td></tr>
+      <tr><td>Local Maharashtra impact</td><td><span class="label label-red">High</span></td></tr>
+      <tr><td>Traffic velocity (last 2 hrs)</td><td><span class="label label-red">High</span></td></tr>
+      <tr><td>CTR performance</td><td><span class="label label-blue">Medium</span></td></tr>
+      <tr><td>Freshness</td><td><span class="label label-blue">Medium</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>CMS labels editors assign</h3>
+  <p>
+    <span class="label label-grey">Normal</span>
+    <span class="label label-blue">Featured</span>
+    <span class="label label-red">Breaking</span>
+    <span class="label label-green">Hero Candidate</span>
+    <span class="label label-red">Main Hero</span>
+  </p>
+  <p style="font-size:13px; color:#555;">System auto-suggests based on signals. Editor has final override at all times.</p>
+
+  <h3>Secondary grid logic</h3>
+  <ul style="padding-left:20px; font-size:13px; color:#333; line-height:2.1;">
+    <li>Slot 1: Different category from hero</li>
+    <li>Slot 2: City story (Pune / Mumbai) or high-CTR editorial pick</li>
+    <li>Mobile Slot 3: Crime or high-shareability story</li>
+  </ul>
+
+  <div class="infobox note">
+    Live badge is not active. Will be implemented in a future phase.
+  </div>
+
+
+  <!-- Section 3 -->
+  <h2><span class="section-num">03</span> Inline Related News - Placement and Logic</h2>
+
+  <h3>Exact placement inside the article body</h3>
+
+  <div class="placement">
+    [Para 1-2]<br>
+    [Ad block]<br>
+    [Key Takeaways box]<br>
+    [Para 3-6]<br>
+    [Pull Quote]<br>
+    <span class="highlight">-- INLINE RELATED BLOCK (1 block, appears here) --</span><br>
+    [Para 7-10]<br>
+    [Ad block]<br>
+    [Para 11+]<br>
+    [Tags row]<br>
+    [Author Bio]
+  </div>
+
+  <p><strong>Format:</strong> Single compact block. Left accent border in brand primary color. <em>संबंधित बातमी</em> label. One headline with arrow link.</p>
+  <p><strong>Count:</strong> 1 block per article. Not repeated.</p>
+
+  <h3>Recommendation logic for this block</h3>
+
+  <div class="priority-row"><span class="priority">1</span><div><strong>Same Topic + Same City</strong><br><span style="color:#666; font-size:12px;">Example: Pune Crime article gets another Pune Crime story</span></div></div>
+  <div class="priority-row"><span class="priority">2</span><div><strong>Same Topic + Different City</strong><br><span style="color:#666; font-size:12px;">Example: Mumbai Crime or Nashik Crime</span></div></div>
+  <div class="priority-row"><span class="priority">3</span><div><strong>Same Main Category</strong><br><span style="color:#666; font-size:12px;">Any other Maharashtra story</span></div></div>
+
+  <div class="infobox warning" style="margin-top:16px;">
+    User is actively reading here. Keep it tightly relevant. Never use trending as a fallback for inline related.
+  </div>
+
+
+  <!-- Section 4 -->
+  <h2><span class="section-num">04</span> End-of-Article Related Stories</h2>
+
+  <h3>Exact placement</h3>
+
+  <div class="placement">
+    [Author Bio]<br>
+    [Native Ad]<br>
+    <span class="highlight">-- "संबंधित बातम्या" - 6 cards in 3-column grid --</span><br>
+    [TrendingModule - 5 items, heat-gradient ranked]
+  </div>
+
+  <h3>6-card composition</h3>
+  <table>
+    <thead>
+      <tr><th>Slots</th><th>Type</th><th>Count</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1-3</td><td>Same City + Same Topic</td><td>3</td></tr>
+      <tr><td>4-5</td><td>Same Topic + Other Cities</td><td>2</td></tr>
+      <tr><td>6</td><td>Trending or Editorial pick</td><td>1</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:13px; color:#555;">
+    First 3 cards deepen relevance. Slots 4-5 expand exploration to other cities. Slot 6 acts as a discovery hook.
+    This prevents a repetitive single-topic feed and increases session depth naturally.
+  </p>
+
+  <div class="infobox note">
+    The TrendingModule below Related Stories is site-wide top 5. It serves as the final session-extension layer before the user exits the article.
+  </div>
+
+
+  <!-- Section 5 -->
+  <h2><span class="section-num">05</span> Category and City Page Logic</h2>
+
+  <p>These are the <strong>same page template.</strong> The route <code>/category/[slug]</code> serves both topic categories and city pages. No separate city route is needed.</p>
+
+  <h3>Page sections in order</h3>
+  <ol style="padding-left:20px; font-size:13px; color:#333; line-height:2.1;">
+    <li>HeroCard - top story for that category or city</li>
+    <li>Latest feed - 6 stories, 2-col grid</li>
+    <li>TrendingModule - top 5 within category</li>
+    <li>City sub-sections (desktop only) - 3 cities x 1 story, for Maharashtra parent category</li>
+    <li>Evergreen section - 4 long-form or reference stories</li>
+    <li>Related Tags cloud</li>
+    <li>Sidebar - Most Read (numbered) + Recently Updated + Ads</li>
+  </ol>
+
+  <h3>City page as dynamic content hub</h3>
+
+  <div class="placement">
+    /category/pune<br>
+    &nbsp;&nbsp;Hero: Top Pune story<br>
+    &nbsp;&nbsp;Latest: Latest Pune articles (all topics)<br>
+    &nbsp;&nbsp;Sections:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="highlight">Pune + Crime | Pune + Politics | Pune + Traffic | Pune + Civic</span><br>
+    &nbsp;&nbsp;(Dynamic filtered sections - NOT separate routes)
+  </div>
+
+  <p style="font-size:13px; color:#555;">Filtering uses the <code>city</code> field combined with topic tags. Zero new routes are created.</p>
+
+
+  <!-- Section 6 -->
+  <h2><span class="section-num">06</span> Area Logic - Managed as Tags</h2>
+
+  <p>Areas like <strong>Hinjawadi, Baner, Wakad, Kothrud</strong> are not separate categories and not separate schema fields. They are managed as <strong>geo-tags</strong> alongside topic tags on the article.</p>
+
+  <h3>Why Tags, not a separate field</h3>
+  <ul style="padding-left:20px; font-size:13px; color:#333; line-height:2.1;">
+    <li>Same tagging interface editors already use</li>
+    <li>Automatically powers a <code>/tag/hinjawadi</code> page if article volume justifies it</li>
+    <li>Feeds the recommendation engine without schema complexity</li>
+    <li>No new routes, no new CMS fields, no new UI</li>
+  </ul>
+
+  <h3>Example article tagging</h3>
+  <div class="placement">
+    Category: Pune<br>
+    Topic: Crime<br>
+    Tags: <span class="highlight">#हिंजवडी</span>, #पुणे पोलीस, #सायबर गुन्हे
+  </div>
+
+  <h3>Recommendations this article feeds</h3>
+  <ul style="padding-left:20px; font-size:13px; color:#333; line-height:2.1;">
+    <li>Pune Crime stories (city + topic match)</li>
+    <li>Other Hinjawadi tag stories (area match)</li>
+    <li>Maharashtra Crime stories (category match)</li>
+    <li>Pune Police tag stories (tag overlap)</li>
+  </ul>
+
+  <div class="infobox warning">
+    <strong>Area tag creation rule:</strong> Create the area tag only when it will have 5+ articles per month consistently. Do not create tags for one-off event locations.
+  </div>
+
+
+  <!-- Section 7 -->
+  <h2><span class="section-num">07</span> Tag Pages</h2>
+
+  <p>URL: <code>/tag/[slug]</code></p>
+  <p>Page sections: Hero, Latest feed, TrendingModule, Related Tags cloud, Sidebar.</p>
+  <p>Tag pages serve as topic hubs - examples: <code>#मराठा आरक्षण</code>, <code>#मेट्रो</code>, <code>#हिंजवडी</code>.</p>
+
+  <div class="infobox warning">
+    <strong>Global tag creation rule:</strong> Only create a tag if it will have 10+ articles per month in sustained volume. Avoid duplicate, random, or low-volume tags.
+  </div>
+
+
+  <!-- Section 8 -->
+  <h2><span class="section-num">08</span> Full Recommendation Priority Matrix</h2>
+
+  <table>
+    <thead>
+      <tr><th>Context</th><th>Priority 1</th><th>Priority 2</th><th>Priority 3</th><th>Fallback</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Inline Related (mid-article)</td>
+        <td>Same Topic + Same City</td>
+        <td>Same Topic + Other City</td>
+        <td>Same Category</td>
+        <td><em style="color:#C62828;">None - do not use trending here</em></td>
+      </tr>
+      <tr>
+        <td>Related Stories slots 1-3</td>
+        <td>Same Topic + Same City</td>
+        <td>Same Topic + Other City</td>
+        <td>Same Category</td>
+        <td>Trending or Editorial</td>
+      </tr>
+      <tr>
+        <td>Related Stories slots 4-6</td>
+        <td>Same Topic + Other City</td>
+        <td>Same Category</td>
+        <td>Trending</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <td>Category Page Hero</td>
+        <td>Top story in category</td>
+        <td>Breaking in category</td>
+        <td>Highest CTR</td>
+        <td>Editor override</td>
+      </tr>
+      <tr>
+        <td>Homepage Hero</td>
+        <td>Breaking + High impact</td>
+        <td>Hero Candidate (editor-marked)</td>
+        <td>Highest traffic velocity</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <td>TrendingModule (all pages)</td>
+        <td>Site-wide top 5 by velocity</td>
+        <td>None</td>
+        <td>None</td>
+        <td>None</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- Section 9 -->
+  <h2><span class="section-num">09</span> Architecture Goals</h2>
+
+  <table>
+    <thead>
+      <tr><th>Goal</th><th>How it is achieved</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Clean SEO</td><td>Category and City share one route template. No URL sprawl.</td></tr>
+      <tr><td>Scalable cities</td><td>City pages are filtered views, not separate category trees.</td></tr>
+      <tr><td>Scalable areas</td><td>Areas are Tags. No new routes or fields needed.</td></tr>
+      <tr><td>Editorial control</td><td>CMS labels override the algorithm at any point.</td></tr>
+      <tr><td>Session depth</td><td>Inline related, then end-of-article related, then Trending - 3 retention layers.</td></tr>
+      <tr><td>Topical authority</td><td>Tags cluster articles for Google Discover and topic-based crawling.</td></tr>
+      <tr><td>Developer simplicity</td><td>6 page templates cover the entire site. One recommendation engine serves all.</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- Dev Note -->
+  <div class="infobox note" style="margin-top: 40px;">
+    <strong>Dev implementation note:</strong> Recommendation engine requires article fields:
+    <code>category</code>, <code>topic</code>, <code>city</code>, <code>tags[]</code>, <code>breakingStatus</code>, <code>publishedAt</code>, <code>trafficVelocity</code>.
+    The only new addition to the current schema is the explicit <code>city</code> field.
+    Areas are fully covered by the existing tags system.
+  </div>
+
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <span>Prajavarta Media Pvt. Ltd. &nbsp;|&nbsp; Confidential - Internal Use Only</span>
+    <span>v1.1 &nbsp;|&nbsp; May 2026</span>
+  </div>
+
+</div>
+
+</body>
+</html>
