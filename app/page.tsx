@@ -126,7 +126,7 @@ export default function HomePage() {
             {/* Secondary stories */}
             <div>
               <div className={layout.secondaryGrid}>
-                <StandardCard category="राजकारण" headline="मुख्यमंत्र्यांच्या शपथविधीसाठी मुंबईत वानखेडेवर कार्यक्रम होणार" badge="LIVE" layout="col" />
+                <StandardCard category="राजकारण" headline="मुख्यमंत्र्यांच्या शपथविधीसाठी मुंबईत वानखेडेवर कार्यक्रम होणार" layout="col" />
                 <StandardCard category="पुणे" headline="पुणे महानगरपालिकेच्या अर्थसंकल्पात पाणीपुरवठा योजनेला प्राधान्य" layout="col" />
               </div>
               {/* Mobile-only third card */}

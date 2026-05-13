@@ -78,7 +78,7 @@ export default function ArticlePage() {
                 <span style={{ margin: '0 6px' }}>›</span>
                 <a href="/category/maharashtra" style={{ color: 'inherit' }}>महाराष्ट्र</a>
                 <span style={{ margin: '0 6px' }}>›</span>
-                राजकारण
+                <a href="/news" style={{ color: 'inherit' }}>राजकारण</a>
               </div>
 
               <CategoryChip name="राजकारण" />
