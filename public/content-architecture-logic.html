@@ -279,7 +279,7 @@
     <div class="doc-logo">Prajavarta Media Pvt. Ltd. &nbsp;|&nbsp; Internal Document</div>
     <h1 class="doc-title">Content Recommendation and<br>Architecture Logic</h1>
     <div class="doc-meta">
-      <span>Version 1.1</span>
+      <span>Version 1.2</span>
       <span>May 2026</span>
       <span>Based on live website structure</span>
       <span>For: Leadership + Development Teams</span>
@@ -298,7 +298,8 @@
     <tbody>
       <tr><td>Homepage</td><td><code>/</code></td><td>Hero + 6 category feeds + trending</td></tr>
       <tr><td>News Article</td><td><code>/news</code></td><td>Full article read experience</td></tr>
-      <tr><td>Category / City</td><td><code>/category/[slug]</code></td><td>Topic or city hub page</td></tr>
+      <tr><td>Category</td><td><code>/category/[slug]</code></td><td>Topic-based hub: राजकारण, गुन्हेगारी, क्रीडा, व्यवसाय, मनोरंजन, देश, जग</td></tr>
+      <tr><td>City</td><td><code>/city/[slug]</code></td><td>Geography-based hub: पुणे, मुंबई, नागपूर, औरंगाबाद — each a standalone content hub</td></tr>
       <tr><td>Tag</td><td><code>/tag/[slug]</code></td><td>Tag-filtered news feed</td></tr>
       <tr><td>Author</td><td><code>/author/[slug]</code></td><td>Writer profile and articles</td></tr>
       <tr><td>All News</td><td><code>/all-news</code></td><td>Full cross-category directory</td></tr>
@@ -306,7 +307,7 @@
   </table>
 
   <div class="infobox note">
-    6 page templates cover the entire site. One recommendation engine will serve all of them.
+    7 page templates cover the entire site. Category and City are intentionally separate routes — a topic is not a geography and should never share a URL pattern. One recommendation engine serves all templates.
   </div>
 
 
@@ -323,7 +324,7 @@
       <tr><td>Tags</td><td>#विधानसभा, #फडणवीस</td><td><span class="status-exists"></span>Exists</td></tr>
       <tr><td>Author</td><td>सुनील देशमुख</td><td><span class="status-exists"></span>Exists</td></tr>
       <tr><td>Breaking Status</td><td>Breaking flag</td><td><span class="status-exists"></span>Exists</td></tr>
-      <tr><td>City</td><td>पुणे</td><td><span class="status-partial"></span>Implied via category only. Needs explicit field.</td></tr>
+      <tr><td>City</td><td>पुणे</td><td><span class="status-partial"></span>Implied via category only. Explicit field required — powers the separate /city/[slug] route.</td></tr>
       <tr><td>Area</td><td>हिंजवडी</td><td><span class="status-exists"></span>Managed via Tags (see Section 06)</td></tr>
     </tbody>
   </table>
@@ -458,33 +459,66 @@
 
 
   <!-- Section 5 -->
-  <h2><span class="section-num">05</span> Category and City Page Logic</h2>
+  <h2><span class="section-num">05</span> Category Pages and City Pages - Kept Separate</h2>
 
-  <p>These are the <strong>same page template.</strong> The route <code>/category/[slug]</code> serves both topic categories and city pages. No separate city route is needed.</p>
+  <p>Categories and Cities answer fundamentally different questions. A category answers <em>what is the story about</em>. A city answers <em>where did the story happen</em>. Merging them into one route makes editorial, SEO, and user experience worse. They are kept separate.</p>
 
-  <h3>Page sections in order</h3>
+  <table>
+    <thead>
+      <tr><th></th><th>Category Page</th><th>City Page</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Route</strong></td><td><code>/category/[slug]</code></td><td><code>/city/[slug]</code></td></tr>
+      <tr><td><strong>Filter logic</strong></td><td>Topic field on article</td><td>City field on article</td></tr>
+      <tr><td><strong>Examples</strong></td><td>राजकारण, गुन्हेगारी, क्रीडा, व्यवसाय</td><td>पुणे, मुंबई, नागपूर, औरंगाबाद</td></tr>
+      <tr><td><strong>Cross-sections</strong></td><td>By city within that topic (desktop)</td><td>By topic within that city</td></tr>
+      <tr><td><strong>SEO value</strong></td><td>Topical authority cluster</td><td>Local geographic authority cluster</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Category page - sections in order</h3>
   <ol style="padding-left:20px; font-size:13px; color:#333; line-height:2.1;">
-    <li>HeroCard - top story for that category or city</li>
-    <li>Latest feed - 6 stories, 2-col grid</li>
-    <li>TrendingModule - top 5 within category</li>
-    <li>City sub-sections (desktop only) - 3 cities x 1 story, for Maharashtra parent category</li>
+    <li>HeroCard - top story in that topic</li>
+    <li>Latest feed - 6 stories, 2-col grid, filtered by topic</li>
+    <li>TrendingModule - top 5 within that topic</li>
+    <li>By-city sub-sections (desktop only) - shows the same topic across 3 cities</li>
     <li>Evergreen section - 4 long-form or reference stories</li>
     <li>Related Tags cloud</li>
-    <li>Sidebar - Most Read (numbered) + Recently Updated + Ads</li>
+    <li>Sidebar - Most Read + Recently Updated + Ads</li>
   </ol>
 
-  <h3>City page as dynamic content hub</h3>
-
   <div class="placement">
-    /category/pune<br>
-    &nbsp;&nbsp;Hero: Top Pune story<br>
-    &nbsp;&nbsp;Latest: Latest Pune articles (all topics)<br>
-    &nbsp;&nbsp;Sections:<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;<span class="highlight">Pune + Crime | Pune + Politics | Pune + Traffic | Pune + Civic</span><br>
-    &nbsp;&nbsp;(Dynamic filtered sections - NOT separate routes)
+    /category/rajkaran (राजकारण)<br>
+    &nbsp;&nbsp;Hero: Top Politics story (any city)<br>
+    &nbsp;&nbsp;Latest: All latest politics stories<br>
+    &nbsp;&nbsp;By City (desktop):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="highlight">Mumbai Politics | Pune Politics | Nagpur Politics</span><br>
+    &nbsp;&nbsp;(Filtered by topic = राजकारण, grouped by city field)
   </div>
 
-  <p style="font-size:13px; color:#555;">Filtering uses the <code>city</code> field combined with topic tags. Zero new routes are created.</p>
+  <h3>City page - sections in order</h3>
+  <ol style="padding-left:20px; font-size:13px; color:#333; line-height:2.1;">
+    <li>HeroCard - top story from that city</li>
+    <li>Latest feed - 6 stories, 2-col grid, filtered by city</li>
+    <li>TrendingModule - top 5 within that city</li>
+    <li>By-topic sub-sections - shows different topics within the same city</li>
+    <li>Evergreen section - city-specific long-form stories</li>
+    <li>Related Tags cloud (area tags like #हिंजवडी, #कोथरूड)</li>
+    <li>Sidebar - Most Read + Recently Updated + Ads</li>
+  </ol>
+
+  <div class="placement">
+    /city/pune (पुणे)<br>
+    &nbsp;&nbsp;Hero: Top Pune story (any topic)<br>
+    &nbsp;&nbsp;Latest: All latest Pune stories<br>
+    &nbsp;&nbsp;By Topic:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="highlight">Pune Crime | Pune Politics | Pune Traffic | Pune Civic</span><br>
+    &nbsp;&nbsp;(Filtered by city = पुणे, grouped by topic field - dynamic, NOT separate routes)
+  </div>
+
+  <div class="infobox note">
+    The by-topic sections on a city page and the by-city sections on a category page are both dynamic filtered views. No new routes are created for them. They are powered by querying the <code>city</code> and <code>topic</code> fields together.
+  </div>
 
 
   <!-- Section 6 -->
@@ -563,9 +597,16 @@
       </tr>
       <tr>
         <td>Category Page Hero</td>
-        <td>Top story in category</td>
-        <td>Breaking in category</td>
-        <td>Highest CTR</td>
+        <td>Top story in that topic</td>
+        <td>Breaking in that topic</td>
+        <td>Highest CTR in topic</td>
+        <td>Editor override</td>
+      </tr>
+      <tr>
+        <td>City Page Hero</td>
+        <td>Top story from that city</td>
+        <td>Breaking from that city</td>
+        <td>Highest CTR in city</td>
         <td>Editor override</td>
       </tr>
       <tr>
@@ -594,8 +635,9 @@
       <tr><th>Goal</th><th>How it is achieved</th></tr>
     </thead>
     <tbody>
-      <tr><td>Clean SEO</td><td>Category and City share one route template. No URL sprawl.</td></tr>
-      <tr><td>Scalable cities</td><td>City pages are filtered views, not separate category trees.</td></tr>
+      <tr><td>Clean SEO</td><td>Category and City have dedicated routes. Topics build topical authority. Cities build local authority. Neither dilutes the other.</td></tr>
+      <tr><td>Scalable cities</td><td>Each city is a standalone hub at /city/[slug]. Topic sub-sections within it are dynamic filtered views, not new routes.</td></tr>
+      <tr><td>Semantic clarity</td><td>A topic (Crime) and a geography (Pune) are different things. Keeping them in separate URL spaces makes this clear to users, editors, and search engines.</td></tr>
       <tr><td>Scalable areas</td><td>Areas are Tags. No new routes or fields needed.</td></tr>
       <tr><td>Editorial control</td><td>CMS labels override the algorithm at any point.</td></tr>
       <tr><td>Session depth</td><td>Inline related, then end-of-article related, then Trending - 3 retention layers.</td></tr>
@@ -609,8 +651,9 @@
   <div class="infobox note" style="margin-top: 40px;">
     <strong>Dev implementation note:</strong> Recommendation engine requires article fields:
     <code>category</code>, <code>topic</code>, <code>city</code>, <code>tags[]</code>, <code>breakingStatus</code>, <code>publishedAt</code>, <code>trafficVelocity</code>.
-    The only new addition to the current schema is the explicit <code>city</code> field.
-    Areas are fully covered by the existing tags system.
+    New additions to current schema: explicit <code>city</code> field (powers /city/[slug] route and city-based filtering).
+    A new route <code>/city/[slug]</code> is required alongside the existing <code>/category/[slug]</code> route.
+    Areas are fully covered by the existing tags system — no new schema field needed.
   </div>
 
 
