@@ -1,0 +1,422 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  MODERATOR
+  REPORTER
+  USER
+  AD_MANAGER
+}
+
+enum NewsOwnerType {
+  ADMIN
+  REPORTER
+  PENDING_REPORTER
+}
+
+enum EditorialLabel {
+  NORMAL
+  FEATURED
+  HERO_CANDIDATE
+  MAIN_HERO
+  BREAKING
+}
+
+enum ArticleStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  PUBLISHED
+  REJECTED
+}
+
+// ─────────────────────────────────────────
+// USER & AUTH
+// ─────────────────────────────────────────
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  nameEnglish  String?  @map("name_english")
+  role         UserRole @default(USER)
+  designation  String?
+  experience   String?
+  bio          String?  @db.Text
+  image        String?
+  twitter      String?
+  linkedin     String?
+  isActive     Boolean  @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  news                News[]
+  authoredNews        News[]           @relation("NewsAuthor")
+  followedAuthors     AuthorFollower[] @relation("UserFollowers")
+  authorFollowers     AuthorFollower[] @relation("AuthorFollowers")
+  savedArticles       SavedArticle[]
+  userNotifications   Notification[]   @relation("NotificationUser")
+  authorNotifications Notification[]   @relation("NotificationAuthor")
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────
+// CATEGORIES  (topic-based: politics, crime, sports…)
+// ─────────────────────────────────────────
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameEnglish String?  @map("name_english")
+  slug        String   @unique
+  description String?
+  image       String?
+  parentId    Int?     @map("parent_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  parent         Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children       Category[] @relation("CategoryHierarchy")
+  news           News[]
+  newsCategories NewsCategory[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────
+// GEOGRAPHY  (District → Subdivision → Tehsil → Location)
+// Kept separate from categories per architecture spec
+// ─────────────────────────────────────────
+
+model District {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameEnglish String?  @map("name_english")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  subdivisions Subdivision[]
+  tehsils      Tehsil[]
+  locations    Location[]
+  news         News[]
+
+  @@map("districts")
+}
+
+model Subdivision {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameEnglish String?  @map("name_english")
+  districtId  Int?     @map("district_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  district  District?  @relation(fields: [districtId], references: [id])
+  tehsils   Tehsil[]
+  locations Location[]
+  news      News[]
+
+  @@index([districtId])
+  @@map("subdivisions")
+}
+
+model Tehsil {
+  id            Int      @id @default(autoincrement())
+  name          String
+  nameEnglish   String?  @map("name_english")
+  districtId    Int?     @map("district_id")
+  subdivisionId Int?     @map("subdivision_id")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  district    District?    @relation(fields: [districtId], references: [id])
+  subdivision Subdivision? @relation(fields: [subdivisionId], references: [id])
+  news        News[]
+
+  @@index([districtId])
+  @@index([subdivisionId])
+  @@map("tehsils")
+}
+
+model Location {
+  id            Int      @id @default(autoincrement())
+  name          String
+  nameEnglish   String?  @map("name_english")
+  districtId    Int?     @map("district_id")
+  subdivisionId Int?     @map("subdivision_id")
+  groupLink     String?  @map("group_link")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  district    District?    @relation(fields: [districtId], references: [id])
+  subdivision Subdivision? @relation(fields: [subdivisionId], references: [id])
+  news        News[]
+
+  @@index([districtId])
+  @@index([subdivisionId])
+  @@map("locations")
+}
+
+// ─────────────────────────────────────────
+// NEWS / ARTICLES
+// ─────────────────────────────────────────
+
+model News {
+  id        Int           @id @default(autoincrement())
+  newsType  String        @default("Image") @map("news_type")
+  userId    Int?          @map("user_id")
+  authorId  Int?          @map("author_id")
+  ownerType NewsOwnerType @default(ADMIN) @map("owner_type")
+
+  // Content
+  title         String?
+  slug          String?  @unique @db.VarChar(500)
+  summary       String?  @db.Text
+  description   String?  @db.Text
+  language      String   @default("Marathi")
+  featuredImage String?  @map("featured_image")
+  galleryImage  String?  @map("gallery_image")
+  newsUrl       String?  @map("news_url")
+  tags          String?  @db.Text
+  videoId       String?  @map("video_id")
+  videoUrl      String?  @map("video_url")
+
+  // Primary category (fast lookup; NewsCategory holds multi-category with scores)
+  categoryId  Int?    @map("category_id")
+  // Legacy comma-separated IDs — kept for migration compatibility
+  categoryIds String? @map("category_ids")
+
+  // Geography
+  districtId    Int? @map("district_id")
+  subdivisionId Int? @map("subdivision_id")
+  tehsilId      Int? @map("tehsil_id")
+  locationId    Int? @map("location_id")
+
+  // Workflow status
+  status        ArticleStatus @default(DRAFT)
+  isActive      Boolean       @default(true) @map("is_active")
+  publishedDate DateTime?     @map("published_date")
+  sendNotification Boolean    @default(false) @map("send_notification")
+
+  // Editorial controls — replaces scattered booleans
+  editorialLabel EditorialLabel @default(NORMAL) @map("editorial_label")
+  pinToHomepage  Boolean        @default(false)  @map("pin_to_homepage")
+  boostScore     Int            @default(0)       @map("boost_score")
+  expireBoostAt  DateTime?                        @map("expire_boost_at")
+
+  // Legacy boolean flags (kept for compat with existing data)
+  isBreakingNews     Boolean @default(false) @map("is_breaking_news")
+  isMiniTrendingNews Boolean @default(false) @map("is_mini_trending_news")
+  isTrendingNews     Boolean @default(false) @map("is_trending_news")
+
+  // Engagement
+  viewCount Int @default(0) @map("view_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user          User?        @relation(fields: [userId], references: [id])
+  author        User?        @relation("NewsAuthor", fields: [authorId], references: [id])
+  category      Category?    @relation(fields: [categoryId], references: [id])
+  district      District?    @relation(fields: [districtId], references: [id])
+  subdivision   Subdivision? @relation(fields: [subdivisionId], references: [id])
+  tehsil        Tehsil?      @relation(fields: [tehsilId], references: [id])
+  location      Location?    @relation(fields: [locationId], references: [id])
+  galleryImages NewsGalleryImage[]
+  savedBy       SavedArticle[]
+  newsCategories NewsCategory[]
+  newsScore     NewsScore?
+
+  @@index([userId])
+  @@index([authorId])
+  @@index([districtId])
+  @@index([subdivisionId])
+  @@index([tehsilId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([isActive, publishedDate])
+  @@index([editorialLabel])
+  @@map("news")
+}
+
+// ─────────────────────────────────────────
+// ARTICLE ↔ CATEGORY  (many-to-many with relevance scores)
+// This is the core of the multi-dimensional architecture.
+// One article can belong to many categories at different relevance levels.
+// ─────────────────────────────────────────
+
+model NewsCategory {
+  id              Int      @id @default(autoincrement())
+  newsId          Int      @map("news_id")
+  categoryId      Int      @map("category_id")
+  relevanceScore  Float    @default(0)   @map("relevance_score")   // 0–100
+  confidenceScore Float    @default(1.0) @map("confidence_score")  // 0–1, from AI tagger
+  isAutoTagged    Boolean  @default(false) @map("is_auto_tagged")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  news     News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([newsId, categoryId])
+  @@index([newsId])
+  @@index([categoryId])
+  @@map("news_categories")
+}
+
+// ─────────────────────────────────────────
+// SCORING ENGINE
+// Computed every 15 minutes by cron job.
+// All feed ordering reads from final_score.
+// ─────────────────────────────────────────
+
+model NewsScore {
+  id             Int      @id @default(autoincrement())
+  newsId         Int      @unique @map("news_id")
+  finalScore     Float    @default(0) @map("final_score")
+  velocityScore  Float    @default(0) @map("velocity_score")   // pageviews last 2 hrs × 0.4
+  freshnessScore Float    @default(0) @map("freshness_score")  // decays with age
+  ctrScore       Float    @default(0) @map("ctr_score")        // clicks/impressions × 20
+  editorialScore Float    @default(0) @map("editorial_score")  // label multiplier
+  breakingBoost  Float    @default(0) @map("breaking_boost")   // +100 if breaking
+  manualBoost    Float    @default(0) @map("manual_boost")     // from boost_score field
+  viewsLast2Hrs  Int      @default(0) @map("views_last_2hrs")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@index([finalScore])
+  @@map("news_scores")
+}
+
+// ─────────────────────────────────────────
+// SUPPORTING MODELS
+// ─────────────────────────────────────────
+
+model NewsGalleryImage {
+  id        Int      @id @default(autoincrement())
+  newsId    Int      @map("news_id")
+  imageUrl  String   @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@index([newsId])
+  @@map("news_gallery_images")
+}
+
+model SavedArticle {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  newsId    Int      @map("news_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+  news News @relation(fields: [newsId], references: [id])
+
+  @@unique([userId, newsId])
+  @@map("saved_articles")
+}
+
+model AuthorFollower {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  authorId  Int      @map("author_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User @relation("UserFollowers", fields: [userId], references: [id], onDelete: Cascade)
+  author User @relation("AuthorFollowers", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, authorId])
+  @@map("author_followers")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String?  @db.Text
+  type      String?
+  userId    Int?     @map("user_id")
+  authorId  Int?     @map("author_id")
+  isRead    Boolean  @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User? @relation("NotificationUser", fields: [userId], references: [id])
+  author User? @relation("NotificationAuthor", fields: [authorId], references: [id])
+
+  @@map("notifications")
+}
+
+model Newsletter {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("newsletters")
+}
+
+model MainAdvertisementBanner {
+  id        Int      @id @default(autoincrement())
+  image     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("main_advertisement_banners")
+}
+
+model Setting {
+  id             Int      @id @default(autoincrement())
+  appName        String?
+  appLogo        String?
+  appDescription String?  @db.Text
+  appVersion     String?
+  author         String?
+  contact        String?
+  email          String?
+  website        String?
+  developedBy    String?
+  privacyPolicy  String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model SmtpSetting {
+  id        Int      @id @default(autoincrement())
+  smtpType  String?  @map("smtp_type")
+  host      String?
+  email     String?
+  password  String?
+  secure    String?
+  port      Int?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("smtp_settings")
+}
