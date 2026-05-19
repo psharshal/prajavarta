@@ -642,25 +642,260 @@
       <tr><td>Editorial control</td><td>CMS labels override the algorithm at any point.</td></tr>
       <tr><td>Session depth</td><td>Inline related, then end-of-article related, then Trending - 3 retention layers.</td></tr>
       <tr><td>Topical authority</td><td>Tags cluster articles for Google Discover and topic-based crawling.</td></tr>
-      <tr><td>Developer simplicity</td><td>6 page templates cover the entire site. One recommendation engine serves all.</td></tr>
+      <tr><td>Developer simplicity</td><td>7 page templates cover the entire site. One recommendation engine serves all.</td></tr>
     </tbody>
   </table>
 
 
+  <!-- Section 10 -->
+  <h2><span class="section-num">10</span> Automated Content Intelligence</h2>
+
+  <p>Editors write. The system tags, scores, and distributes — automatically. No manual categorisation required at publish time.</p>
+
+  <h3>Layer 1 — Keyword Auto-Tagger (runs on every article save)</h3>
+
+  <p>A keyword dictionary scans the article headline and first 3 paragraphs the moment an article is saved. Tags are applied instantly.</p>
+
+  <table>
+    <thead>
+      <tr><th>Dictionary</th><th>Keywords (examples)</th><th>Output</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>City</td><td>पुणे, पुण्यात, पुण्याच्या, पुण्याहून</td><td>city = "pune"</td></tr>
+      <tr><td>City</td><td>मुंबई, मुंबईत, मुंबईच्या</td><td>city = "mumbai"</td></tr>
+      <tr><td>City</td><td>नागपूर, नागपुरात</td><td>city = "nagpur"</td></tr>
+      <tr><td>Category</td><td>अटक, गुन्हा, पोलीस, FIR, तक्रार</td><td>category = "crime"</td></tr>
+      <tr><td>Category</td><td>निवडणूक, आमदार, मंत्री, सरकार, पक्ष</td><td>category = "politics"</td></tr>
+      <tr><td>Category</td><td>सामना, विजय, संघ, क्रिकेट, खेळाडू</td><td>category = "sports"</td></tr>
+      <tr><td>Category</td><td>शेअर, बाजार, नफा, कंपनी, अर्थसंकल्प</td><td>category = "business"</td></tr>
+      <tr><td>Area</td><td>हिंजवडी, बाणेर, वाकड, कोथरूड</td><td>area_tag = [match]</td></tr>
+    </tbody>
+  </table>
+
+  <p>If confidence is high, tags are applied and article is published. If confidence is low (article has mixed signals), it is flagged for editor review — editor sees a suggested tag, not a blank field.</p>
+
+  <h3>Layer 2 — AI Tagger for Edge Cases</h3>
+
+  <p>For the 10–20% of articles where keyword matching is uncertain, the article text is sent to an AI API (Claude or Google NLP). The response returns structured tags with confidence scores. Cost per article is under Rs. 0.25. For 100 articles per day that is roughly Rs. 700 per month.</p>
+
+  <div class="placement">
+    Article saved in CMS<br>
+    &nbsp;&nbsp;&nbsp;↓<br>
+    Keyword scan runs (&lt;100ms)<br>
+    &nbsp;&nbsp;&nbsp;↓<br>
+    Confidence high → <span class="highlight">tags applied, done</span><br>
+    Confidence low  → AI API called → tags applied<br>
+    &nbsp;&nbsp;&nbsp;↓<br>
+    Article stored with: category, city, area[], tags[]
+  </div>
+
+  <h3>Scoring Engine (cron job, runs every 15 minutes)</h3>
+
+  <table>
+    <thead>
+      <tr><th>Score Component</th><th>Formula</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Breaking boost</td><td>breaking_flag = true → +100</td><td>Always surfaces breaking news</td></tr>
+      <tr><td>Traffic velocity</td><td>pageviews in last 2 hrs × 0.4</td><td>What readers are actually reading now</td></tr>
+      <tr><td>Editorial weight</td><td>editor_priority label × 50</td><td>Human editorial judgment</td></tr>
+      <tr><td>Freshness decay</td><td>score reduces as article ages</td><td>Keeps feed current</td></tr>
+      <tr><td>CTR performance</td><td>clicks / impressions × 20</td><td>Proven engagement signal</td></tr>
+    </tbody>
+  </table>
+
+  <div class="infobox note">
+    <strong>Trending</strong> is simply: SELECT articles ORDER BY pageviews_last_2hrs DESC LIMIT 5. No algorithm. Updated every 15 minutes by cron.
+  </div>
+
+
+  <!-- Section 11 -->
+  <h2><span class="section-num">11</span> Geo-Personalization</h2>
+
+  <p>The same homepage is served to everyone, but the article scoring and section order shift based on where the reader is. No separate pages are built. No login required. It works on the first visit.</p>
+
+  <h3>How location is detected on your own server</h3>
+
+  <p><strong>MaxMind GeoLite2</strong> — a free database file that lives on the server. One local lookup per new visitor. No external API call. No per-request cost. Returns country, state, city within 1ms. Updated monthly. This is the standard used by major news sites worldwide.</p>
+
+  <p>For area-level precision (Dadar, Hinjawadi, Baner) — the browser geolocation API is used. It asks the user once for permission. Once granted, area is stored in a cookie and never asked again.</p>
+
+  <h3>5 User Segments</h3>
+
+  <table>
+    <thead>
+      <tr><th>Segment</th><th>Who</th><th>Detection source</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>A</strong></td><td>Maharashtra user with area known (e.g. Dadar, Mumbai)</td><td>IP city + browser geo</td></tr>
+      <tr><td><strong>B</strong></td><td>Maharashtra user, city only (e.g. Pune, Nagpur)</td><td>IP city level</td></tr>
+      <tr><td><strong>C</strong></td><td>Maharashtra user, no city (small town, rural)</td><td>IP state only</td></tr>
+      <tr><td><strong>D</strong></td><td>Outside Maharashtra, within India (Delhi, Bangalore)</td><td>IP state != Maharashtra</td></tr>
+      <tr><td><strong>E</strong></td><td>Outside India (UAE, US, UK — Marathi diaspora assumed)</td><td>IP country != IN</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What each segment sees on Homepage</h3>
+
+  <table>
+    <thead>
+      <tr><th></th><th>Seg A (MH + Area)</th><th>Seg B (MH + City)</th><th>Seg C (MH only)</th><th>Seg D (Outside MH)</th><th>Seg E (Outside India)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Hero</strong></td><td>Maharashtra</td><td>Maharashtra</td><td>Maharashtra</td><td>देश (National)</td><td>Maharashtra</td></tr>
+      <tr><td><strong>Secondary slot 1</strong></td><td>City story</td><td>City story</td><td>Maharashtra</td><td>Maharashtra</td><td>देश story</td></tr>
+      <tr><td><strong>Secondary slot 2</strong></td><td>Maharashtra</td><td>Maharashtra</td><td>Maharashtra</td><td>देश story</td><td>जग story</td></tr>
+      <tr><td><strong>Area strip</strong></td><td>Shows (3+ stories)</td><td>Hidden</td><td>Hidden</td><td>Hidden</td><td>Hidden</td></tr>
+      <tr><td><strong>Category order</strong></td><td>City section first</td><td>City section first</td><td>Default</td><td>देश section first</td><td>जग then देश first</td></tr>
+      <tr><td><strong>Trending</strong></td><td colspan="5" style="text-align:center; color:#888;">Site-wide for all segments — never personalised</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Geo score boost per segment</h3>
+
+  <table>
+    <thead>
+      <tr><th>Segment</th><th>Boost applied on top of base score</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>A — MH + Area</td><td>area match +60 &nbsp;|&nbsp; city match +35 &nbsp;|&nbsp; Maharashtra +10</td></tr>
+      <tr><td>B — MH + City</td><td>city match +35 &nbsp;|&nbsp; Maharashtra +10</td></tr>
+      <tr><td>C — MH only</td><td>Maharashtra +10</td></tr>
+      <tr><td>D — Outside MH, India</td><td>category=देश +40 &nbsp;|&nbsp; Maharashtra +5</td></tr>
+      <tr><td>E — Outside India</td><td>category=जग +30 &nbsp;|&nbsp; category=देश +20 &nbsp;|&nbsp; Maharashtra +10</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Cookie storage</h3>
+
+  <table>
+    <thead>
+      <tr><th>Property</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Cookie name</td><td>pv_geo</td></tr>
+      <tr><td>Example value</td><td>{ segment: "D", city: null, state: "delhi", country: "IN" }</td></tr>
+      <tr><td>Set by</td><td>Server on first request via GeoLite2 lookup</td></tr>
+      <tr><td>Updated by</td><td>Browser geo if user grants permission (adds area)</td></tr>
+      <tr><td>Expiry</td><td>30 days</td></tr>
+      <tr><td>Personal data stored</td><td>None. No name, no email, no device ID.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="infobox note">
+    Inline related news and end-of-article related stories are NOT personalised by geo. Once a reader is inside an article, they have self-selected their interest. Topic relevance matters more than geography at that point.
+  </div>
+
+
+  <!-- Section 12 — Final Summary -->
+  <div style="margin-top:56px; padding:32px 36px; background:#1a1a1a; color:#fff; border-radius:4px;">
+    <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#C62828; margin-bottom:12px;">Final Section — Read This First</div>
+    <div style="font-size:22px; font-weight:800; line-height:1.2; margin-bottom:6px;">How Everything Works Together</div>
+    <div style="font-size:13px; color:#aaa; margin-bottom:28px;">The complete system in plain language. Start here if you have not read the full document.</div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-bottom:32px;">
+
+      <div>
+        <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#C62828; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #333;">When an Editor Publishes an Article</div>
+        <div style="font-size:13px; line-height:2; color:#ccc;">
+          The editor writes the article and hits publish.<br><br>
+          The moment it is saved, a keyword scanner reads the headline and first few paragraphs. It identifies the city (पुणे, मुंबई), the topic (Crime, Politics, Sports), and any area names (Hinjawadi, Dadar). Tags are applied in under a second.<br><br>
+          If the scanner is unsure — say the article spans two cities or two topics — it sends the text to an AI which returns precise tags. This takes 2–3 seconds and costs less than a rupee.<br><br>
+          The article is now fully tagged. No editor action needed for categorisation.<br><br>
+          Every 15 minutes, a background process recalculates scores for all recent articles. Breaking news gets a 100-point boost. Articles getting heavy traffic get a velocity boost. Older articles decay. The result is a ranked list that powers the homepage hero, secondary slots, and trending module.<br><br>
+          If an editor wants to force any article to the hero position — they set the Main Hero label in the CMS. The algorithm respects it immediately.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#C62828; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #333;">When a Reader Opens the Site</div>
+        <div style="font-size:13px; line-height:2; color:#ccc;">
+          The server receives the request and reads the reader's IP address. A local database lookup (under 1ms) returns the reader's country, state, and city. This happens before the page starts rendering.<br><br>
+          A reader from Pune gets a Maharashtra hero and a Pune story in the secondary slot. A reader from Delhi gets a National (देश) hero with Maharashtra in the secondary. A reader from Dubai gets Maharashtra in the hero — they are likely Marathi diaspora.<br><br>
+          This location is stored in a cookie. Every visit after the first is instant — no lookup needed.<br><br>
+          If the reader grants location permission in the browser, the system also detects the area (Dadar, Hinjawadi, Kothrud). A small strip of hyper-local area news appears if 3 or more stories from that area exist.<br><br>
+          While reading an article, one related story appears mid-article — always from the same city and same topic. At the end of the article, 6 related stories appear — first 3 from the same city and topic, next 2 from the same topic in other cities, and one trending pick as a discovery hook.<br><br>
+          Trending is never personalised. What Maharashtra is talking about right now is the same for everyone.
+        </div>
+      </div>
+
+    </div>
+
+    <div style="border-top:1px solid #333; padding-top:28px;">
+      <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#C62828; margin-bottom:16px;">The Complete Flow — Article to Reader</div>
+      <div style="font-family: 'SF Mono', monospace; font-size:12px; line-height:2.2; color:#bbb; background:#111; padding:20px 24px; border-radius:3px;">
+        Editor publishes article<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Keyword scanner tags: city, topic, area, tags (auto, &lt;1 sec)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ If unsure: AI API tags it (2–3 sec, &lt;Re. 1 cost)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Article stored with full tag set<br>
+        <br>
+        Every 15 minutes (background cron)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Recalculate article scores: breaking + velocity + freshness + editorial<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Update trending cache: top 5 by pageviews in last 2 hours<br>
+        <br>
+        Reader opens prajavarta.com<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ IP lookup: country + state + city detected (1ms, own server)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Segment assigned: A / B / C / D / E<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Geo score boost applied to article ranking<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Homepage renders: hero, secondary, categories — all personalised<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Location stored in cookie (30 days, no personal data)<br>
+        <br>
+        Reader opens an article<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Inline related: same city + same topic query (mid-article, 1 block)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Related stories: 3 same city/topic + 2 other city + 1 trending (end of article)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Trending module: site-wide top 5 (cached, not personalised)<br>
+        <br>
+        Next visit<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Cookie read instantly → personalisation applied → no lookup needed
+      </div>
+    </div>
+
+    <div style="margin-top:28px; padding:20px 24px; background:#111; border-left:3px solid #C62828; border-radius:0 3px 3px 0;">
+      <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:10px;">What editors control vs what runs automatically</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; font-size:12px; color:#aaa; line-height:1.9;">
+        <div>
+          <div style="color:#C62828; font-weight:700; margin-bottom:6px;">Automatic (no editor action)</div>
+          City, topic, area tagging on publish<br>
+          Hero score recalculation (every 15 min)<br>
+          Trending recalculation (every 15 min)<br>
+          Geo detection per reader<br>
+          Feed personalisation per segment<br>
+          Inline and end-of-article related news<br>
+          Area strip (shows only if 3+ stories exist)
+        </div>
+        <div>
+          <div style="color:#4CAF50; font-weight:700; margin-bottom:6px;">Editor controlled (overrides algorithm)</div>
+          Mark article as Main Hero (forces hero slot)<br>
+          Mark article as Breaking (instant +100 score)<br>
+          Correct a wrong auto-tag (rare)<br>
+          Pin article to a specific section<br>
+          Set Featured / Hero Candidate labels
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px; font-size:12px; color:#666; line-height:1.8;">
+      This entire system requires one backend developer for 4–5 weeks to build. No machine learning team. No data science. Standard database queries, one cron job, one keyword dictionary, and one IP lookup file. The AI tagger is optional and adds 2 days of work.
+    </div>
+
+  </div>
+
+
   <!-- Dev Note -->
   <div class="infobox note" style="margin-top: 40px;">
-    <strong>Dev implementation note:</strong> Recommendation engine requires article fields:
-    <code>category</code>, <code>topic</code>, <code>city</code>, <code>tags[]</code>, <code>breakingStatus</code>, <code>publishedAt</code>, <code>trafficVelocity</code>.
-    New additions to current schema: explicit <code>city</code> field (powers /city/[slug] route and city-based filtering).
-    A new route <code>/city/[slug]</code> is required alongside the existing <code>/category/[slug]</code> route.
-    Areas are fully covered by the existing tags system — no new schema field needed.
+    <strong>Dev implementation note:</strong> Article schema fields required:
+    <code>category</code>, <code>topic</code>, <code>city</code>, <code>area[]</code>, <code>tags[]</code>, <code>breakingStatus</code>, <code>editorLabel</code>, <code>publishedAt</code>, <code>pageviewsLast2Hrs</code>, <code>ctrScore</code>.
+    New routes required: <code>/city/[slug]</code> alongside existing <code>/category/[slug]</code>.
+    Geo library: MaxMind GeoLite2-City.mmdb (free, self-hosted, monthly update).
+    Cron: runs every 15 minutes to refresh hero scores and trending cache.
+    Areas handled via tags system — no separate schema field needed.
   </div>
 
 
   <!-- Footer -->
   <div class="doc-footer">
     <span>Prajavarta Media Pvt. Ltd. &nbsp;|&nbsp; Confidential - Internal Use Only</span>
-    <span>v1.1 &nbsp;|&nbsp; May 2026</span>
+    <span>v1.3 &nbsp;|&nbsp; May 2026</span>
   </div>
 
 </div>
