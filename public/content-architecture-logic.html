@@ -279,7 +279,7 @@
     <div class="doc-logo">Prajavarta Media Pvt. Ltd. &nbsp;|&nbsp; Internal Document</div>
     <h1 class="doc-title">Content Recommendation and<br>Architecture Logic</h1>
     <div class="doc-meta">
-      <span>Version 1.2</span>
+      <span>Version 2.0</span>
       <span>May 2026</span>
       <span>Based on live website structure</span>
       <span>For: Leadership + Development Teams</span>
@@ -787,11 +787,385 @@
   </div>
 
 
+  <!-- Section 13 -->
+  <h2><span class="section-num">13</span> The Correct Mental Model: Attributes, Not Folders</h2>
+
+  <p>Most people imagine news content works like a filing cabinet. One article goes into one folder. That model breaks the moment one article spans two cities, two topics, or both national and local impact.</p>
+
+  <div class="placement">
+    Old model (breaks at scale)<br>
+    India<br>
+    &nbsp;&nbsp;└── Maharashtra<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Politics<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── article.html<br>
+    <br>
+    Problem: where does "Pune metro affects Maharashtra economy" go?<br>
+    City? Transport? Economy? Maharashtra? All of the above.
+  </div>
+
+  <p>The correct model treats every article as a set of attributes. The system then asks: <em>where should this article appear?</em> Not: <em>which one folder does it belong to?</em></p>
+
+  <div class="placement">
+    Modern model (what Prajavarta is building)<br>
+    <br>
+    article = {<br>
+    &nbsp;&nbsp;locations:        [Maharashtra, Pune, India],<br>
+    &nbsp;&nbsp;topics:           [Politics, Transport],<br>
+    &nbsp;&nbsp;entities:         [CM, Metro Rail Board],<br>
+    &nbsp;&nbsp;importance_score: 87,<br>
+    &nbsp;&nbsp;freshness_score:  92,<br>
+    &nbsp;&nbsp;location_score:   80<br>
+    }<br>
+    <br>
+    → Maharashtra feed: this article ranks 3rd<br>
+    → Politics feed: this article ranks 7th<br>
+    → Pune feed: this article ranks 1st<br>
+    → Homepage: this article ranks 5th<br>
+    → Transport tag: this article ranks 1st
+  </div>
+
+  <p>The same article appears in Maharashtra, Politics, Pune, and the homepage simultaneously — at different positions — because each feed computes its own ranking independently. This is exactly how Google News, Dailyhunt, and Inshorts work.</p>
+
+  <div class="infobox note">
+    <strong>The Netflix analogy:</strong> One movie appears under Action, Trending, Indian, New Releases, and Because You Watched XYZ at the same time. Same content. Different ranking contexts. News works identically.
+  </div>
+
+
+  <!-- Section 14 -->
+  <h2><span class="section-num">14</span> Multi-Dimensional Data Schema</h2>
+
+  <p>The database schema follows from the mental model. Instead of a rigid single-category article table, the schema separates articles from their classifications using a mapping table with relevance scores.</p>
+
+  <h3>Core Tables</h3>
+
+  <table>
+    <thead>
+      <tr><th>Table</th><th>Purpose</th><th>Key Fields</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>articles</code></td><td>The article itself — source of truth</td><td>id, title, slug, content, status, author_id, language, published_at</td></tr>
+      <tr><td><code>article_category_map</code></td><td>Many-to-many: article to categories with relevance scores</td><td>article_id, category_id, relevance_score, confidence_score</td></tr>
+      <tr><td><code>categories</code></td><td>Unified taxonomy for topics and sectors</td><td>id, name, slug, type (topic / sector), parent_id</td></tr>
+      <tr><td><code>locations</code></td><td>Geographic hierarchy</td><td>id, name, slug, type (country / state / city / area), parent_id</td></tr>
+      <tr><td><code>article_locations</code></td><td>Many-to-many: article to locations with relevance scores</td><td>article_id, location_id, relevance_score</td></tr>
+      <tr><td><code>tags</code></td><td>Freeform labels — areas, events, people, topics</td><td>id, name, slug, use_count</td></tr>
+      <tr><td><code>entities</code></td><td>Named people, organisations, parties extracted by AI</td><td>id, name, type (person / org / party), mention_count</td></tr>
+      <tr><td><code>article_scores</code></td><td>Computed scores, updated by cron every 15 min</td><td>article_id, final_score, velocity_score, freshness_score, ctr_score, editorial_score</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Article Mapping Table: the key insight</h3>
+
+  <p>A single article can have many rows in <code>article_category_map</code>. Each row carries its own relevance score. Feeds query by category and sort by combined score — no two feeds return the same ranking.</p>
+
+  <table>
+    <thead>
+      <tr><th>article_id</th><th>category_id</th><th>category_name</th><th>relevance_score</th><th>confidence_score</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>101</td><td>4</td><td>Politics</td><td>95</td><td>0.92</td></tr>
+      <tr><td>101</td><td>2</td><td>Maharashtra</td><td>70</td><td>0.88</td></tr>
+      <tr><td>101</td><td>3</td><td>Pune</td><td>80</td><td>0.85</td></tr>
+      <tr><td>101</td><td>7</td><td>Transport</td><td>40</td><td>0.60</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Location Hierarchy Table</h3>
+
+  <p>Locations use integer IDs with parent references. A Pune article automatically qualifies for Maharashtra and India feeds via parent_id traversal. No manual tagging of parent geographies needed.</p>
+
+  <table>
+    <thead>
+      <tr><th>id</th><th>name</th><th>type</th><th>parent_id</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>India</td><td>country</td><td>null</td></tr>
+      <tr><td>2</td><td>Maharashtra</td><td>state</td><td>1</td></tr>
+      <tr><td>3</td><td>Pune</td><td>city</td><td>2</td></tr>
+      <tr><td>4</td><td>Mumbai</td><td>city</td><td>2</td></tr>
+      <tr><td>5</td><td>Nagpur</td><td>city</td><td>2</td></tr>
+      <tr><td>6</td><td>Hinjawadi</td><td>area</td><td>3</td></tr>
+      <tr><td>7</td><td>Dadar</td><td>area</td><td>4</td></tr>
+    </tbody>
+  </table>
+
+  <div class="infobox warning">
+    <strong>Why integers, not strings:</strong> Storing location IDs instead of text like "पुणे" keeps joins fast and eliminates spelling inconsistencies. A single query pulls all Maharashtra content: WHERE location.id = 2 OR location.parent_id = 2. This also handles nested hierarchies automatically — Hinjawadi content surfaces in Pune feed and Maharashtra feed with no extra tagging.
+  </div>
+
+  <h3>Inverted Index Structure (Elasticsearch)</h3>
+
+  <p>Instead of scanning all articles on every page load, Elasticsearch pre-builds lookup lists. A feed query becomes a fast index lookup, not a full table scan.</p>
+
+  <table>
+    <thead>
+      <tr><th>Index</th><th>Key</th><th>Value (pre-ranked article IDs)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Location index</td><td>Maharashtra</td><td>[art1, art5, art8, art23, art41 ...]</td></tr>
+      <tr><td>City index</td><td>Pune</td><td>[art5, art23, art41 ...]</td></tr>
+      <tr><td>Category index</td><td>Politics</td><td>[art1, art2, art9, art17 ...]</td></tr>
+      <tr><td>Entity index</td><td>Devendra Fadnavis</td><td>[art2, art10, art33 ...]</td></tr>
+      <tr><td>Tag index</td><td>#मेट्रो</td><td>[art7, art14, art55 ...]</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- Section 15 -->
+  <h2><span class="section-num">15</span> Dynamic Feed Engine</h2>
+
+  <p>Feeds are never generated fresh from the database on every page load. Instead the Feed Engine computes and caches ranked article lists every 15 minutes. Page renders read from cache. The database is only touched when cache is stale or an editorial override invalidates it.</p>
+
+  <h3>Weighted Scoring Formula per Feed Context</h3>
+
+  <p>The weights shift depending on which feed is being computed. A city page cares more about location relevance. A category page cares more about topic relevance. The homepage balances everything.</p>
+
+  <table>
+    <thead>
+      <tr><th>Signal</th><th>Homepage</th><th>Category Feed</th><th>City Feed</th><th>Tag/Topic Feed</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Freshness</td><td>30%</td><td>25%</td><td>25%</td><td>30%</td></tr>
+      <tr><td>Location relevance</td><td>20%</td><td>10%</td><td>35%</td><td>10%</td></tr>
+      <tr><td>Topic relevance</td><td>15%</td><td>35%</td><td>20%</td><td>35%</td></tr>
+      <tr><td>Trending (velocity)</td><td>15%</td><td>15%</td><td>10%</td><td>15%</td></tr>
+      <tr><td>Editorial priority</td><td>10%</td><td>10%</td><td>5%</td><td>5%</td></tr>
+      <tr><td>CTR performance</td><td>10%</td><td>5%</td><td>5%</td><td>5%</td></tr>
+    </tbody>
+  </table>
+
+  <div class="placement">
+    final_score =<br>
+    &nbsp;&nbsp;(freshness_score &times; 0.30)<br>
+    + (location_score &times; 0.20)<br>
+    + (topic_score &times; 0.15)<br>
+    + (velocity_score &times; 0.15)<br>
+    + (editorial_score &times; 0.10)<br>
+    + (ctr_score &times; 0.10)<br>
+    <br>
+    Breaking override: breaking_flag = true → add 100 (always surfaces, regardless of weights)<br>
+    Pin override: pin_to_homepage = true → forced to slot 1 (ignores all scoring)
+  </div>
+
+  <h3>Editorial Override Fields (set in CMS per article)</h3>
+
+  <table>
+    <thead>
+      <tr><th>CMS Field</th><th>Effect on Feed Engine</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>pin_to_homepage = true</td><td>Forces article into hero position for homepage, overrides all scoring</td></tr>
+      <tr><td>boost_score = N</td><td>Adds N to final_score in all feeds until expire_boost_at datetime</td></tr>
+      <tr><td>expire_boost_at</td><td>Boost removed automatically — no editor action needed</td></tr>
+      <tr><td>breaking_flag = true</td><td>Adds 100 to score. Surfaced on all relevant feeds immediately.</td></tr>
+      <tr><td>editorial_label</td><td>Breaking (+100), Main Hero (pin), Hero Candidate (+60), Featured (+30), Normal (0)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Redis Feed Caching: Precomputed Feed Blocks</h3>
+
+  <p>The Feed Engine maintains Redis sorted sets for every feed context. Score is the sort key. Article ID is the value. A page render reads from Redis in under 1ms — no PostgreSQL query for feed ordering.</p>
+
+  <div class="placement">
+    Redis sorted sets maintained:<br>
+    <br>
+    feed:homepage              (all articles, homepage weights)<br>
+    feed:category:rajkaran     (politics articles, category weights)<br>
+    feed:category:gurhegeari   (crime articles, category weights)<br>
+    feed:city:pune             (Pune articles, city weights)<br>
+    feed:city:mumbai           (Mumbai articles, city weights)<br>
+    feed:trending              (top 5 by pageviews last 2 hrs)<br>
+    feed:segment:D             (outside-MH users, देश score boosted)<br>
+    feed:segment:E             (outside-India users, जग then देश boosted)<br>
+    <br>
+    Cache TTL: 15 minutes (cron refreshes before expiry)<br>
+    Cache bust: immediate when moderator pins or boosts an article
+  </div>
+
+  <div class="infobox note">
+    PostgreSQL is the source of truth. Elasticsearch is the discovery and search layer. Redis is the serving layer. Each has a specific role — they are not alternatives. A page request reads from Redis, never directly from PostgreSQL or Elasticsearch.
+  </div>
+
+
+  <!-- Section 16 -->
+  <h2><span class="section-num">16</span> Backend Processing Pipeline</h2>
+
+  <p>Every article goes through a sequential processing pipeline. Most steps run asynchronously in a background queue (BullMQ). The editor sees publish confirmation immediately — enrichment happens behind the scenes.</p>
+
+  <div class="placement">
+    Step 1 — Editor saves article in CMS<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Article stored in PostgreSQL: status = "draft" or "pending_review"<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;BullMQ job queued immediately<br>
+    <br>
+    Step 2 — Keyword Scanner (background, &lt;100ms)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Scans headline + first 3 paragraphs<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;High confidence → city, topic, area tags applied directly<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Low confidence → flags for AI tagger<br>
+    <br>
+    Step 3 — AI Tagger (only when needed, 2-3 sec)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Article text sent to Claude API<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Returns: category, city, area[], entities[], tags[] with confidence scores<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Cost per article: under Rs. 0.25<br>
+    <br>
+    Step 4 — Metadata Extraction<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;article_category_map rows created (one per category, with relevance_score)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;article_locations rows created (location hierarchy resolved automatically)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Named entities linked to entities table<br>
+    <br>
+    Step 5 — Moderator Review (if submitted by Reporter)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;CMS shows article with suggested tags pre-filled<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Moderator can correct any tag before approval<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Moderator approves → status = "approved"<br>
+    <br>
+    Step 6 — Publishing<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Article status → "published"<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Elasticsearch index updated (full-text and tag indexes)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Affected Redis feed caches invalidated immediately<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;SEO sitemap entry added<br>
+    <br>
+    Step 7 — Score Recalculation (cron, every 15 min)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;final_score computed for all published articles (last 7 days)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Redis sorted sets updated per feed context<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Trending list updated: top 5 by pageviews_last_2hrs<br>
+    <br>
+    Step 8 — Reader Page Request<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;API reads from Redis → returns ranked article list (&lt;1ms)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;PostgreSQL only queried for article body content (by ID, indexed)
+  </div>
+
+  <h3>Why Async Queue Matters</h3>
+
+  <p>AI tagging takes 2-3 seconds. Elasticsearch indexing takes 300-500ms. If these ran synchronously, every editor save would block for 3-4 seconds. The BullMQ queue decouples saving from processing. The editor saves, sees confirmation in under 200ms, and the article is enriched in the background.</p>
+
+  <div class="infobox note">
+    A Moderator reviewing an article in the CMS always sees the AI-suggested tags pre-filled. Corrections are rare (estimated 5-10% of articles). This is the human-in-the-loop checkpoint before any article goes live.
+  </div>
+
+
+  <!-- Section 17 -->
+  <h2><span class="section-num">17</span> User Roles and Permissions (RBAC)</h2>
+
+  <p>Role-Based Access Control. Every action in the CMS is tied to a role. Each user has exactly one role. Roles cannot be stacked.</p>
+
+  <table>
+    <thead>
+      <tr><th>Role</th><th>Can Do</th><th>Cannot Do</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Super Admin</strong><br><small style="color:#888;">1 person initially</small></td>
+        <td>All actions: manage roles, manage all content, publish directly, override any article, manage ads, feature flags, analytics dashboard, SEO settings, AI moderation settings, billing</td>
+        <td>Nothing restricted</td>
+      </tr>
+      <tr>
+        <td><strong>Moderator / Editor</strong></td>
+        <td>Review articles, approve/reject, override AI tags, set Breaking flag, boost score, pin stories, manage trending, moderate comments, assign categories</td>
+        <td>Cannot manage user roles. Cannot access billing or system settings. Cannot delete published articles.</td>
+      </tr>
+      <tr>
+        <td><strong>Reporter</strong></td>
+        <td>Create articles, edit own drafts, upload media, submit for review, schedule publishing, use AI writing tools, view own analytics</td>
+        <td>Cannot publish directly. Cannot see other reporters' drafts. Cannot modify approved articles. Cannot set Breaking or pin.</td>
+      </tr>
+      <tr>
+        <td><strong>Reader / User</strong></td>
+        <td>Read content, bookmark, follow topics and locations, comment, like/share, personalise feed, receive notifications</td>
+        <td>No CMS access. No content creation of any kind.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Article Lifecycle by Role</h3>
+
+  <div class="placement">
+    Reporter creates → DRAFT<br>
+    Reporter submits → PENDING_REVIEW<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Moderator reviews (sees AI-suggested tags pre-filled)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;APPROVED → enters publishing pipeline (Section 16)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;REJECTED → Reporter notified with reason, can revise and resubmit<br>
+    <br>
+    Moderator writes own article → can publish directly (DRAFT → PUBLISHED)<br>
+    Super Admin → can publish any article at any stage, bypass review
+  </div>
+
+  <h3>CMS Override Permissions by Role</h3>
+
+  <table>
+    <thead>
+      <tr><th>Action</th><th>Reporter</th><th>Moderator</th><th>Super Admin</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Correct AI-suggested tag</td><td>Own articles only</td><td>Any article</td><td>Any article</td></tr>
+      <tr><td>Set Breaking flag</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Pin to Homepage</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Boost score manually</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Delete published article</td><td>No</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Manage ad placements</td><td>No</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Manage feature flags</td><td>No</td><td>No</td><td>Yes</td></tr>
+      <tr><td>View full analytics</td><td>Own articles</td><td>All articles</td><td>All + system</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- Section 18 -->
+  <h2><span class="section-num">18</span> Recommended Tech Stack</h2>
+
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>Technology</th><th>Why This Choice</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Frontend</td><td>Next.js 14+ (App Router)</td><td>SSR/SSG/ISR, SEO-optimized, already in use on Prajavarta</td></tr>
+      <tr><td>Backend API</td><td>NestJS (TypeScript)</td><td>Modular, RBAC-ready, scales cleanly, same language as frontend</td></tr>
+      <tr><td>Primary Database</td><td>PostgreSQL</td><td>Source of truth, relational, supports complex joins, JSONB for metadata</td></tr>
+      <tr><td>ORM</td><td>Prisma</td><td>Type-safe, readable schema, auto-generated migrations</td></tr>
+      <tr><td>Cache / Feed Serving</td><td>Redis</td><td>Sorted sets for feed ranking, under 1ms reads, BullMQ queue runs on it too</td></tr>
+      <tr><td>Search Engine</td><td>Elasticsearch / OpenSearch</td><td>Full-text search, autocomplete, faceted filtering, inverted index</td></tr>
+      <tr><td>Background Queue</td><td>BullMQ (Redis-backed)</td><td>Async AI tagging, Elasticsearch indexing, score computation jobs</td></tr>
+      <tr><td>AI Tagger</td><td>Claude API (Anthropic)</td><td>Marathi NLP, structured JSON output, confidence scores, low cost per call</td></tr>
+      <tr><td>Geo Detection</td><td>MaxMind GeoLite2</td><td>Free, self-hosted .mmdb file, 1ms lookup, no external API, monthly updates</td></tr>
+      <tr><td>Authentication</td><td>JWT + refresh tokens</td><td>Stateless, RBAC-compatible, no session storage needed</td></tr>
+      <tr><td>File/Media Storage</td><td>S3-compatible (Cloudflare R2)</td><td>Article images, thumbnails — no egress fees unlike AWS S3</td></tr>
+      <tr><td>CDN</td><td>Cloudflare</td><td>Edge caching for static and ISR pages, DDoS protection, free tier</td></tr>
+      <tr><td>Deployment</td><td>Docker on own server</td><td>Full control, matches existing server migration plan, all services containerised</td></tr>
+    </tbody>
+  </table>
+
+  <div class="infobox note">
+    Start with PostgreSQL + Redis + BullMQ (Phase 1). Add Elasticsearch when search volume justifies it (Phase 2). Add AI tagger after the keyword dictionary is tuned on real articles (Phase 2). The architecture supports each component being added without rewriting existing code.
+  </div>
+
+  <h3>Phased Build Approach</h3>
+
+  <table>
+    <thead>
+      <tr><th>Phase</th><th>What to Build</th><th>Estimated Timeline</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1</strong><br>Foundation</td>
+        <td>Articles, categories, article_category_map, location hierarchy, RBAC, basic feed ranking, Redis caching, keyword auto-tagger, cron scoring, geo-detection</td>
+        <td>6-8 weeks (1 backend dev)</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2</strong><br>Intelligence</td>
+        <td>AI tagger (Claude API), Elasticsearch integration, full-text search, autocomplete, trending engine, SEO sitemaps, analytics tracking</td>
+        <td>4-6 weeks</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3</strong><br>Personalisation</td>
+        <td>User accounts, bookmarks, follow topics/locations, personalised feed per user, push notifications, recommendation embeddings</td>
+        <td>6-8 weeks</td>
+      </tr>
+    </tbody>
+  </table>
+
+
   <!-- Section 12 — Final Summary -->
   <div style="margin-top:56px; padding:32px 36px; background:#1a1a1a; color:#fff; border-radius:4px;">
     <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#C62828; margin-bottom:12px;">Final Section — Read This First</div>
     <div style="font-size:22px; font-weight:800; line-height:1.2; margin-bottom:6px;">How Everything Works Together</div>
-    <div style="font-size:13px; color:#aaa; margin-bottom:28px;">The complete system in plain language. Start here if you have not read the full document.</div>
+    <div style="font-size:13px; color:#aaa; margin-bottom:28px;">The complete system in plain language. Covers Sections 00-18. Readable standalone without reading the full document.</div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-bottom:32px;">
 
@@ -824,29 +1198,41 @@
     <div style="border-top:1px solid #333; padding-top:28px;">
       <div style="font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#C62828; margin-bottom:16px;">The Complete Flow — Article to Reader</div>
       <div style="font-family: 'SF Mono', monospace; font-size:12px; line-height:2.2; color:#bbb; background:#111; padding:20px 24px; border-radius:3px;">
-        Editor publishes article<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Keyword scanner tags: city, topic, area, tags (auto, &lt;1 sec)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ If unsure: AI API tags it (2–3 sec, &lt;Re. 1 cost)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Article stored with full tag set<br>
+        Reporter writes article → saved in PostgreSQL (status: draft)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ BullMQ job queued immediately (async, editor sees save confirmation in &lt;200ms)<br>
+        <br>
+        Background queue processes the article<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Keyword scanner: identifies city, topic, area, entities (&lt;100ms)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ High confidence → tags applied directly to article_category_map<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Low confidence → Claude API called → structured tags + confidence scores returned<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Location hierarchy resolved: Pune → Maharashtra → India (via parent_id)<br>
+        <br>
+        Reporter submits for review<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Moderator opens article in CMS — sees AI-suggested tags pre-filled<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Moderator corrects if needed (rare), approves → status: published<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Elasticsearch index updated (full-text + inverted indexes)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Affected Redis feed caches invalidated immediately<br>
         <br>
         Every 15 minutes (background cron)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Recalculate article scores: breaking + velocity + freshness + editorial<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Update trending cache: top 5 by pageviews in last 2 hours<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Recalculate final_score: freshness(30%) + location(20%) + topic(15%) + velocity(15%) + editorial(10%) + CTR(10%)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Breaking flag adds 100 regardless of weights<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Redis sorted sets updated per feed: homepage, category, city, segment<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Trending cache updated: top 5 by pageviews in last 2 hours<br>
         <br>
         Reader opens prajavarta.com<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ IP lookup: country + state + city detected (1ms, own server)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Segment assigned: A / B / C / D / E<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Geo score boost applied to article ranking<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Homepage renders: hero, secondary, categories — all personalised<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Location stored in cookie (30 days, no personal data)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ IP lookup: MaxMind GeoLite2 returns country + state + city (1ms, own server)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Segment assigned: A (MH+Area) / B (MH+City) / C (MH) / D (Outside MH) / E (Outside India)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Feed API reads from Redis sorted set for that segment (&lt;1ms)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Homepage renders with personalised hero, secondary, category order<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Geo segment stored in cookie pv_geo (30 days, no personal data)<br>
         <br>
         Reader opens an article<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Inline related: same city + same topic query (mid-article, 1 block)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Related stories: 3 same city/topic + 2 other city + 1 trending (end of article)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Trending module: site-wide top 5 (cached, not personalised)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Inline related: PostgreSQL query, same city + same topic, ranked by score (1 block)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ End related: 3 same city/topic + 2 other city/same topic + 1 trending (6 cards)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Trending module: Redis read, site-wide top 5, same for everyone<br>
         <br>
         Next visit<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;→ Cookie read instantly → personalisation applied → no lookup needed
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Cookie read instantly → personalisation applied → no GeoLite2 lookup needed
       </div>
     </div>
 
@@ -854,28 +1240,36 @@
       <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:10px;">What editors control vs what runs automatically</div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; font-size:12px; color:#aaa; line-height:1.9;">
         <div>
-          <div style="color:#C62828; font-weight:700; margin-bottom:6px;">Automatic (no editor action)</div>
-          City, topic, area tagging on publish<br>
-          Hero score recalculation (every 15 min)<br>
-          Trending recalculation (every 15 min)<br>
-          Geo detection per reader<br>
-          Feed personalisation per segment<br>
-          Inline and end-of-article related news<br>
-          Area strip (shows only if 3+ stories exist)
+          <div style="color:#C62828; font-weight:700; margin-bottom:6px;">Automatic (no editor action needed)</div>
+          City, topic, area tagging via keyword scanner<br>
+          AI tagging fallback when scanner is unsure<br>
+          Location hierarchy: Pune auto-qualifies for Maharashtra + India feeds<br>
+          article_category_map rows created with relevance scores<br>
+          article_scores recalculated every 15 min (cron)<br>
+          Redis feed caches updated every 15 min<br>
+          Trending recalculation every 15 min<br>
+          Geo detection per reader (MaxMind GeoLite2)<br>
+          Segment-based feed personalisation (A/B/C/D/E)<br>
+          Inline and end-of-article related stories<br>
+          Area strip (shows only when 3+ stories from that area exist)<br>
+          Elasticsearch index updated on publish<br>
+          SEO sitemap updated on publish
         </div>
         <div>
-          <div style="color:#4CAF50; font-weight:700; margin-bottom:6px;">Editor controlled (overrides algorithm)</div>
-          Mark article as Main Hero (forces hero slot)<br>
-          Mark article as Breaking (instant +100 score)<br>
-          Correct a wrong auto-tag (rare)<br>
-          Pin article to a specific section<br>
-          Set Featured / Hero Candidate labels
+          <div style="color:#4CAF50; font-weight:700; margin-bottom:6px;">Editor / Moderator controlled (overrides algorithm)</div>
+          Correct a wrong auto-tag (CMS shows suggestion, not blank)<br>
+          Set Breaking flag (instant +100 score boost)<br>
+          Pin to Homepage (forces hero slot, bypasses all scoring)<br>
+          Boost score manually with expiry date<br>
+          Set Hero Candidate (+60) or Featured (+30) label<br>
+          Reject Reporter article with reason (returns to draft)<br>
+          Delete or retract a published article (Super Admin only)
         </div>
       </div>
     </div>
 
     <div style="margin-top:24px; font-size:12px; color:#666; line-height:1.8;">
-      This entire system requires one backend developer for 4–5 weeks to build. No machine learning team. No data science. Standard database queries, one cron job, one keyword dictionary, and one IP lookup file. The AI tagger is optional and adds 2 days of work.
+      Phase 1 (Foundation) requires one backend developer for 6-8 weeks: PostgreSQL schema with article_category_map and location hierarchy, Redis feed caching, BullMQ queue, keyword auto-tagger, cron scoring engine, RBAC, and GeoLite2 geo-detection. No machine learning team. No data science. Standard database queries plus one keyword dictionary. Phase 2 adds the Claude API tagger (2-3 days extra) and Elasticsearch (2-3 weeks). Phase 3 adds user accounts and personalised feeds.
     </div>
 
   </div>
@@ -883,19 +1277,20 @@
 
   <!-- Dev Note -->
   <div class="infobox note" style="margin-top: 40px;">
-    <strong>Dev implementation note:</strong> Article schema fields required:
-    <code>category</code>, <code>topic</code>, <code>city</code>, <code>area[]</code>, <code>tags[]</code>, <code>breakingStatus</code>, <code>editorLabel</code>, <code>publishedAt</code>, <code>pageviewsLast2Hrs</code>, <code>ctrScore</code>.
-    New routes required: <code>/city/[slug]</code> alongside existing <code>/category/[slug]</code>.
-    Geo library: MaxMind GeoLite2-City.mmdb (free, self-hosted, monthly update).
-    Cron: runs every 15 minutes to refresh hero scores and trending cache.
-    Areas handled via tags system — no separate schema field needed.
+    <strong>Dev implementation note (Phase 1):</strong><br>
+    <strong>Tables:</strong> <code>articles</code>, <code>article_category_map</code>, <code>categories</code>, <code>locations</code>, <code>article_locations</code>, <code>tags</code>, <code>entities</code>, <code>article_scores</code>, <code>users</code>, <code>roles</code>.<br>
+    <strong>Article fields:</strong> <code>title</code>, <code>slug</code>, <code>content</code>, <code>status</code>, <code>author_id</code>, <code>language</code>, <code>published_at</code>, <code>breaking_flag</code>, <code>editorial_label</code>, <code>pin_to_homepage</code>, <code>boost_score</code>, <code>expire_boost_at</code>.<br>
+    <strong>Score fields (article_scores):</strong> <code>final_score</code>, <code>velocity_score</code>, <code>freshness_score</code>, <code>ctr_score</code>, <code>editorial_score</code>.<br>
+    <strong>Routes:</strong> <code>/city/[slug]</code> alongside existing <code>/category/[slug]</code>. Area tags route: <code>/tag/[slug]</code>.<br>
+    <strong>Services:</strong> BullMQ worker for async tagging pipeline. Cron every 15 min for scoring + Redis refresh. MaxMind GeoLite2-City.mmdb for geo-detection (free, self-hosted, monthly update).<br>
+    <strong>Stack:</strong> NestJS + PostgreSQL + Prisma + Redis + BullMQ. Elasticsearch added in Phase 2. Claude API tagger optional, added after keyword dictionary is tuned on real articles.
   </div>
 
 
   <!-- Footer -->
   <div class="doc-footer">
     <span>Prajavarta Media Pvt. Ltd. &nbsp;|&nbsp; Confidential - Internal Use Only</span>
-    <span>v1.3 &nbsp;|&nbsp; May 2026</span>
+    <span>v2.0 &nbsp;|&nbsp; May 2026</span>
   </div>
 
 </div>
