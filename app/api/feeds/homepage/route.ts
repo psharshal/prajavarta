@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     ].slice(0, 6)
 
     const categoriesWiseData: Record<string, any[]> = {}
-    const usedIds = new Set([heroId, ...secondary.map(n => n.id)])
+    const usedIds = new Set<number>([...(heroId ? [heroId] : []), ...secondary.map(n => n.id)])
 
     for (const cat of orderedCategories as any[]) {
       if (!cat) continue
