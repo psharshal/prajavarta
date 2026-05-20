@@ -2,7 +2,18 @@ import Logo from '@/components/ui/Logo'
 import { HamburgerIcon, SearchIcon } from '@/components/ui/Icons'
 import styles from './Header.module.css'
 
-const NAV_ITEMS = ['मुख्यपृष्ठ', 'महाराष्ट्र', 'पुणे', 'राजकारण', 'गुन्हेगारी', 'मनोरंजन', 'क्रीडा', 'व्यवसाय', 'देश', 'जग']
+const NAV_ITEMS = [
+  { label: 'मुख्यपृष्ठ', href: '/' },
+  { label: 'महाराष्ट्र', href: '/category/maharashtra' },
+  { label: 'पुणे', href: '/city/Pune' },
+  { label: 'राजकारण', href: '/category/politics' },
+  { label: 'गुन्हेगारी', href: '/category/crime' },
+  { label: 'मनोरंजन', href: '/category/entertainment' },
+  { label: 'क्रीडा', href: '/category/sports' },
+  { label: 'व्यवसाय', href: '/category/business' },
+  { label: 'देश', href: '/category/desh' },
+  { label: 'जग', href: '/category/jag' },
+]
 
 const MEGA_NEWS = [
   { c: 'महाराष्ट्र', h: 'राज्यात कांद्याच्या भावात मोठी घसरण, शेतकऱ्यांचे आंदोलन', color: '#c0392b' },
@@ -52,8 +63,8 @@ export default function Header() {
           <Logo big inverted />
           <nav className={`mr ${styles.desktopNav}`}>
             {NAV_ITEMS.map((item) => (
-              <a key={item} className={styles.navLink} href="#">
-                {item}
+              <a key={item.href} className={styles.navLink} href={item.href}>
+                {item.label}
               </a>
             ))}
 
