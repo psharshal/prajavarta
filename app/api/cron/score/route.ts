@@ -8,7 +8,9 @@ type EditorialLabel = 'NORMAL' | 'FEATURED' | 'HERO_CANDIDATE' | 'MAIN_HERO' | '
 // Vercel: add to vercel.json crons. Own server: call via node-cron or system cron.
 // Protect with CRON_SECRET env var.
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get('x-cron-secret') ?? req.nextUrl.searchParams.get('secret')
+  // Accepts: x-cron-secret header (own server), Authorization Bearer (Vercel cron), or ?secret= param
+  const bearerToken = req.headers.get('authorization')?.replace('Bearer ', '')
+  const secret = req.headers.get('x-cron-secret') ?? bearerToken ?? req.nextUrl.searchParams.get('secret')
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mkdir, writeFile } from 'fs/promises'
-import path from 'path'
 import { verifyToken, ADMIN_AUTH_COOKIE_NAME } from '@/lib/auth'
 
 const ALLOWED_FOLDERS = ['categories', 'news', 'authors', 'settings', 'main-advertisement-banner']
@@ -25,6 +23,11 @@ function extFromMime(mime: string): string {
   }
   return map[mime] ?? 'jpg'
 }
+
+// On Vercel: filesystem is read-only — uploads go to /tmp but don't persist.
+// Use Vercel Blob, Cloudinary, or paste the image URL directly in the admin panel.
+// On own server: full filesystem write works as expected.
+const IS_VERCEL = !!process.env.VERCEL
 
 export async function POST(req: NextRequest) {
   const admin = requireAdmin(req)
@@ -57,19 +60,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File exceeds 5 MB limit' }, { status: 400 })
     }
 
+    if (IS_VERCEL) {
+      return NextResponse.json(
+        { error: 'File uploads are not supported on Vercel. Paste an image URL directly in the URL field below.' },
+        { status: 422 },
+      )
+    }
+
+    // Own-server path: write to public/uploads/
+    const { mkdir, writeFile } = await import('fs/promises')
+    const path = await import('path')
+
     const ext       = extFromMime(file.type)
     const rand      = Math.random().toString(36).slice(2, 8)
     const filename  = `${Date.now()}-${rand}.${ext}`
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'admin', folder)
 
     await mkdir(uploadDir, { recursive: true })
+    await writeFile(path.join(uploadDir, filename), Buffer.from(await file.arrayBuffer()))
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    await writeFile(path.join(uploadDir, filename), buffer)
-
-    const url = `/uploads/admin/${folder}/${filename}`
-
-    return NextResponse.json({ success: true, url })
+    return NextResponse.json({ success: true, url: `/uploads/admin/${folder}/${filename}` })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

@@ -4,5 +4,10 @@
       "path": "/api/cron/score",
       "schedule": "*/15 * * * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 30
+    }
+  }
 }
