@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     const category = await prisma.category.findFirst({
       where: {
         isActive: true,
-        OR: [{ slug }, { nameEnglish: { equals: slug, mode: 'insensitive' } }],
+        OR: [{ slug }, { nameEnglish: slug }],
       },
     })
 

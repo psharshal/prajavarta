@@ -1,11 +1,13 @@
 import { catColor } from '@/lib/catColors'
 
 interface CategoryChipProps {
-  name: string
+  name?: string
+  label?: string
   size?: 'sm' | 'md'
 }
 
-export default function CategoryChip({ name, size = 'md' }: CategoryChipProps) {
+export default function CategoryChip({ name, label, size = 'md' }: CategoryChipProps) {
+  const display = name ?? label ?? ''
   const padding = size === 'sm' ? '3px 8px' : '5px 10px'
   const fontSize = size === 'sm' ? 10 : 11
 
@@ -19,12 +21,12 @@ export default function CategoryChip({ name, size = 'md' }: CategoryChipProps) {
         fontWeight: 700,
         letterSpacing: '0.04em',
         color: '#fff',
-        background: catColor(name),
+        background: catColor(display),
         borderRadius: 2,
         textTransform: 'uppercase',
       }}
     >
-      {name}
+      {display}
     </span>
   )
 }

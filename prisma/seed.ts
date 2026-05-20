@@ -99,11 +99,11 @@ async function main() {
     where: { id: 1 },
     update: {},
     create: {
-      siteName:        'प्रजावार्ता',
-      siteNameEnglish: 'Prajavarta',
-      siteTagline:     'महाराष्ट्राचे विश्वासू बातमीपत्र',
-      contactEmail:    'contact@prajavarta.com',
-      siteUrl:         'https://prajavarta.com',
+      appName:    'प्रजावार्ता',
+      email:      'contact@prajavarta.com',
+      website:    'https://prajavarta.com',
+      contact:    '+91 00000 00000',
+      author:     'Prajavarta Team',
     },
   })
   console.log('Settings seeded')

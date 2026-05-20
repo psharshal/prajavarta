@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { computeScore, freshnessScore } from '@/lib/scoring'
-import { EditorialLabel } from '@prisma/client'
+
+type EditorialLabel = 'NORMAL' | 'FEATURED' | 'HERO_CANDIDATE' | 'MAIN_HERO' | 'BREAKING'
 
 // Called by cron every 15 minutes.
 // Vercel: add to vercel.json crons. Own server: call via node-cron or system cron.

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyToken, ADMIN_AUTH_COOKIE_NAME } from '@/lib/auth'
 import { tagArticle } from '@/lib/tagger'
-import { EditorialLabel, ArticleStatus } from '@prisma/client'
+
+type EditorialLabel = 'NORMAL' | 'FEATURED' | 'HERO_CANDIDATE' | 'MAIN_HERO' | 'BREAKING'
+type ArticleStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED'
 
 function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(ADMIN_AUTH_COOKIE_NAME)?.value

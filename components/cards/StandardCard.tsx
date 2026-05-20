@@ -10,9 +10,10 @@ interface StandardCardProps {
   badge?: string
   href?: string
   imageSrc?: string
+  meta?: string
 }
 
-export default function StandardCard({ category, headline, layout = 'row', badge, href, imageSrc }: StandardCardProps) {
+export default function StandardCard({ category, headline, layout = 'row', badge, href, imageSrc, meta }: StandardCardProps) {
   const linkStyle = href ? { textDecoration: 'none', display: 'block' } : undefined
 
   if (layout === 'row') {

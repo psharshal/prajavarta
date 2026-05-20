@@ -1,9 +1,10 @@
 import styles from './Ad.module.css'
 
 interface AdProps {
-  id: string
+  id?: string
+  slot?: string
   name?: string
-  size: string
+  size?: string
   width?: number
   height?: number
   sticky?: boolean
@@ -12,7 +13,9 @@ interface AdProps {
   className?: string
 }
 
-export default function Ad({ id, name, size, width, height, sticky, fluid, style, className }: AdProps) {
+export default function Ad({ id, slot, name, size, width, height, sticky, fluid, style, className }: AdProps) {
+  const adId = id ?? slot ?? 'ad'
+  const adSize = size ?? '300×250'
   return (
     <div
       className={`adPlaceholder ${styles.ad} ${className || ''}`}
@@ -25,8 +28,8 @@ export default function Ad({ id, name, size, width, height, sticky, fluid, style
     >
       {sticky && <span className={styles.stickyBadge}>STICKY</span>}
       <div className={styles.label}>जाहिरात · Advertisement</div>
-      <div className={styles.adId}>{id}</div>
-      <div className={styles.adSize}>{size}</div>
+      <div className={styles.adId}>{adId}</div>
+      <div className={styles.adSize}>{adSize}</div>
       {name && <div className={styles.adName}>{name}</div>}
     </div>
   )

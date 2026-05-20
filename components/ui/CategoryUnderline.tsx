@@ -1,11 +1,11 @@
 import { catColor } from '@/lib/catColors'
 
 interface CategoryUnderlineProps {
-  name: string
+  name?: string
   label?: string
 }
 
-export default function CategoryUnderline({ name, label }: CategoryUnderlineProps) {
+export default function CategoryUnderline({ name = '', label }: CategoryUnderlineProps) {
   return (
     <div
       style={{
