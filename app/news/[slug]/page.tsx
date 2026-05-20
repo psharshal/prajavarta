@@ -33,65 +33,67 @@ export default async function ArticlePage({ params }: { params: { slug: string }
       district: true,
       newsCategories: { include: { category: true } },
       galleryImages: true,
+      newsScore: true,
     },
   })
 
   if (!article) return notFound()
 
-  // Fire-and-forget view count increment
+  // Fire-and-forget view count + score velocity increment
   prisma.news.update({
     where: { id: article.id },
     data: { viewCount: { increment: 1 } },
   }).catch(() => {})
+  if (article.newsScore) {
+    prisma.newsScore.update({
+      where: { newsId: article.id },
+      data: { viewsLast2Hrs: { increment: 1 } },
+    }).catch(() => {})
+  }
 
-  // Related P1: same category AND district
+  // ── Related P1: same category + district (geo-precision) ──────────────
   const relatedP1 = await prisma.news.findMany({
     where: {
       ...BASE_WHERE,
       id: { not: article.id },
       categoryId: article.categoryId ?? undefined,
-      districtId: article.districtId ?? undefined,
+      ...(article.districtId != null ? { districtId: article.districtId } : {}),
     },
     orderBy: { newsScore: { finalScore: 'desc' } },
     include: { category: true },
     take: 3,
   })
 
+  // ── Related P2: same category, different/no district ─────────────────
   const p1Ids = relatedP1.map((n) => n.id)
-
-  // Related P2: same category, different district
   const relatedP2 = await prisma.news.findMany({
     where: {
       ...BASE_WHERE,
       id: { notIn: [article.id, ...p1Ids] },
       categoryId: article.categoryId ?? undefined,
-      ...(article.districtId != null
-        ? { NOT: { districtId: article.districtId } }
-        : {}),
+      ...(article.districtId != null ? { NOT: { districtId: article.districtId } } : {}),
     },
     orderBy: { newsScore: { finalScore: 'desc' } },
     include: { category: true },
     take: 2,
   })
 
+  // ── Related P3: cross-category trending fill (up to 6 total) ─────────
   const p2Ids = relatedP2.map((n) => n.id)
-
-  // Related P3: trending (viewsLast2Hrs), exclude all above
-  const relatedP3 = await prisma.news.findMany({
-    where: {
-      ...BASE_WHERE,
-      id: { notIn: [article.id, ...p1Ids, ...p2Ids] },
-    },
+  const haveRelated = relatedP1.length + relatedP2.length
+  const relatedP3 = haveRelated < 6 ? await prisma.news.findMany({
+    where: { ...BASE_WHERE, id: { notIn: [article.id, ...p1Ids, ...p2Ids] } },
     orderBy: { newsScore: { viewsLast2Hrs: 'desc' } },
     include: { category: true },
-    take: 1,
-  })
+    take: 6 - haveRelated,
+  }) : []
 
   const RELATED = [...relatedP1, ...relatedP2, ...relatedP3]
+  const usedIds = [article.id, ...RELATED.map((n) => n.id)]
 
-  // Trending sidebar
+  // ── Trending sidebar — excludes article + all related ─────────────────
   const trendingNews = await prisma.news.findMany({
-    where: BASE_WHERE,
+    where: { ...BASE_WHERE, id: { notIn: usedIds } },
     orderBy: { newsScore: { viewsLast2Hrs: 'desc' } },
     include: { category: true },
     take: 5,
@@ -103,14 +105,15 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     href: '/news/' + n.slug,
   }))
 
-  // Most read sidebar
+  // ── Most read — excludes article + related + trending ──────────────────
+  const trendingIds = trendingNews.map((n) => n.id)
   const mostReadNews = await prisma.news.findMany({
-    where: BASE_WHERE,
+    where: { ...BASE_WHERE, id: { notIn: [...usedIds, ...trendingIds] } },
     orderBy: { viewCount: 'desc' },
     take: 4,
   })
 
-  const MOST_READ = mostReadNews.map((n) => n.title ?? '')
+  const MOST_READ = mostReadNews.map((n) => ({ title: n.title ?? '', href: '/news/' + n.slug }))
 
   // Tags
   const TAGS = article.tags
@@ -366,13 +369,43 @@ export default async function ArticlePage({ params }: { params: { slug: string }
             <div style={{ padding: 20, border: '1px solid var(--border-default)' }}>
               <CategoryUnderline name="Politics" label="सर्वाधिक वाचलेले" />
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {MOST_READ.map((h, i) => (
-                  <li key={i} className="mr" style={{ fontSize: 14, lineHeight: 1.45, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-default)', paddingBottom: 14, fontWeight: 500 }}>
-                    {h}
+                {MOST_READ.map((item, i) => (
+                  <li key={i} style={{ borderBottom: '1px solid var(--border-default)', paddingBottom: 14 }}>
+                    <a href={item.href} style={{ textDecoration: 'none' }}>
+                      <span className="mr" style={{ fontSize: 14, lineHeight: 1.45, color: 'var(--text-primary)', fontWeight: 500 }}>{item.title}</span>
+                    </a>
                   </li>
                 ))}
               </ul>
             </div>
+
+            {/* ── Score Breakdown (Architecture Demo) ── */}
+            {article.newsScore && (
+              <div style={{ padding: 20, border: '2px solid #e63946', background: '#fff9f9' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#e63946', textTransform: 'uppercase', marginBottom: 12 }}>
+                  NewsScore — Architecture
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { label: 'Final Score', val: article.newsScore.finalScore.toFixed(1), color: '#e63946', bold: true },
+                    { label: 'Freshness', val: article.newsScore.freshnessScore.toFixed(1), color: '#0ea5e9' },
+                    { label: 'Velocity (2hr views)', val: `${article.newsScore.viewsLast2Hrs} → ${article.newsScore.velocityScore.toFixed(1)}`, color: '#10b981' },
+                    { label: 'Editorial Label', val: article.editorialLabel, color: '#8b5cf6' },
+                    { label: 'Breaking Boost', val: article.isBreakingNews ? '+100' : '0', color: '#f97316' },
+                    { label: 'Pinned', val: article.pinToHomepage ? '+200' : '0', color: '#f59e0b' },
+                    { label: 'View Count', val: article.viewCount.toString(), color: '#64748b' },
+                  ].map(row => (
+                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+                      <span style={{ color: '#64748b' }}>{row.label}</span>
+                      <span style={{ fontWeight: row.bold ? 800 : 600, color: row.color, fontFamily: 'monospace' }}>{row.val}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 12, fontSize: 11, color: '#94a3b8', lineHeight: 1.5 }}>
+                  Score = 0.3×freshness + 0.15×velocity + 0.1×editorial + breaking + pin
+                </div>
+              </div>
+            )}
 
             <Newsletter />
 

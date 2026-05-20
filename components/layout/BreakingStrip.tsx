@@ -1,4 +1,17 @@
-export default function BreakingStrip() {
+import prisma from '@/lib/prisma'
+
+export default async function BreakingStrip() {
+  const breakingNews = await prisma.news.findMany({
+    where: { status: 'PUBLISHED', isActive: true, isBreakingNews: true },
+    orderBy: { publishedDate: 'desc' },
+    take: 5,
+    select: { title: true, slug: true },
+  })
+
+  const ticker = breakingNews.length > 0
+    ? breakingNews.map((n) => n.title).join(' · ') + ' ·'
+    : 'ताज्या बातम्यांसाठी प्रजावार्ताशी जुळलेले रहा ·'
+
   return (
     <div
       style={{
@@ -34,7 +47,7 @@ export default function BreakingStrip() {
           textOverflow: 'ellipsis',
         }}
       >
-        विधानसभा निवडणूक निकाल जाहीर · सरकार स्थापनेच्या हालचालींना वेग · मुंबईत जोरदार पाऊस ·
+        {ticker}
       </span>
     </div>
   )

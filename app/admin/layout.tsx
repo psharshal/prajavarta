@@ -1,14 +1,9 @@
 'use client'
 
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-
-type AdminUser = { id: number; name: string | null; email: string; role: string }
-type AdminContextType = { user: AdminUser | null; logout: () => void }
-
-const AdminContext = createContext<AdminContextType>({ user: null, logout: () => {} })
-export const useAdmin = () => useContext(AdminContext)
+import { AdminContext, type AdminUser } from './admin-context'
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
