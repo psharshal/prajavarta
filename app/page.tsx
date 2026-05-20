@@ -10,96 +10,116 @@ import CompactListItem from '@/components/cards/CompactListItem'
 import TrendingModule from '@/components/modules/TrendingModule'
 import CategorySection from '@/components/modules/CategorySection'
 import layout from '@/styles/layout.module.css'
+import prisma from '@/lib/prisma'
 
-const TRENDING_ITEMS = [
-  { c: 'राजकारण', h: 'अजित पवार गटाची आज महत्त्वाची बैठक, मंत्रिपदाच्या मुद्द्यावर चर्चा' },
-  { c: 'क्रीडा', h: 'रोहित शर्मा कसोटी संघातून निवृत्त; मुंबईकरांचा भावूक निरोप' },
-  { c: 'व्यवसाय', h: 'रिलायन्सच्या तिमाही नफ्यात १८% वाढ, शेअर बाजार उसळला' },
-  { c: 'मनोरंजन', h: 'रितेश देशमुखचा \'राजा शिवछत्रपती\' चित्रपट दिवाळीला प्रदर्शित' },
-  { c: 'महाराष्ट्र', h: 'मराठवाड्यात अवकाळी पावसाचा कहर, १२ जिल्ह्यांत पीकहानी' },
-]
+export default async function HomePage() {
+  const BASE_WHERE = { status: 'PUBLISHED' as const, isActive: true }
 
-const CATEGORY_SECTIONS = [
-  {
-    cat: 'महाराष्ट्र',
-    hero: 'राज्यात कांद्याच्या भावात मोठी घसरण, शेतकऱ्यांचे आंदोलन सुरू',
-    stories: [
-      'नागपूर हिवाळी अधिवेशनाची तारीख निश्चित, १६ डिसेंबरपासून सुरुवात',
-      'औरंगाबाद नामांतराचा वाद पुन्हा चर्चेत, सुप्रीम कोर्टात सुनावणी',
-      'नाशिकमध्ये द्राक्ष निर्यातीत २०% घट, युरोपीय निर्बंधांचा परिणाम',
+  // Hero: top pinned/scored article
+  const heroNews = await prisma.news.findFirst({
+    where: BASE_WHERE,
+    orderBy: [
+      { pinToHomepage: 'desc' },
+      { newsScore: { finalScore: 'desc' } },
     ],
-  },
-  {
-    cat: 'पुणे',
-    hero: 'पुण्यात मेट्रोच्या तिसऱ्या टप्प्याचे काम सुरू, २०२८ पर्यंत पूर्णत्वाचे लक्ष्य',
-    stories: [
-      'हिंजवडी आयटी हब विस्ताराला राज्य सरकारची मंजुरी',
-      'पीएमपीच्या ३०० नवीन ई-बस ताफ्यात येणार, सप्टेंबरपर्यंत सेवा',
-      'कोरेगाव पार्क परिसरात रस्ते दुरुस्तीचे काम पूर्ण',
-    ],
-  },
-  {
-    cat: 'राजकारण',
-    hero: 'विरोधी पक्षनेतेपदावरून ठाकरे आणि काँग्रेसमध्ये रस्सीखेच, चर्चा गुप्त',
-    stories: [
-      'लोकसभेत अध्यक्षपदासाठी इंडिया आघाडीची रणनीती ठरली',
-      'एनसीपी शरद पवार गटाच्या प्रदेशाध्यक्षपदी सुनील तटकरे',
-      'भाजप प्रदेशाध्यक्षपदी फडणवीसांची फेरनियुक्ती निश्चित',
-    ],
-  },
-  {
-    cat: 'गुन्हेगारी',
-    hero: 'कुख्यात तस्कर ललित पाटीलला मुंबई पोलिसांनी अटक केली',
-    stories: [
-      'ठाण्यात सायबर फसवणुकीची ४.२ कोटींची तक्रार दाखल',
-      'नाशिकमध्ये अंमली पदार्थ तस्करीचा भांडाफोड, ५ अटक',
-      'मुंबईत खंडणी प्रकरणी निवृत्त पोलीस अधिकाऱ्यावर गुन्हा',
-    ],
-  },
-  {
-    cat: 'क्रीडा',
-    hero: 'मुंबई इंडियन्सच्या नव्या प्रशिक्षकपदी महेंद्रसिंग धोनीच्या नावाची चर्चा',
-    stories: [
-      'विश्वचषक हॉकी स्पर्धेसाठी भारतीय संघाची घोषणा',
-      'पीव्ही सिंधू ऑस्ट्रेलियन ओपनच्या उपांत्य फेरीत दाखल',
-      'रणजी ट्रॉफीत मुंबईचा सलग दुसरा विजय',
-    ],
-  },
-  {
-    cat: 'व्यवसाय',
-    hero: 'सेन्सेक्सने ऐतिहासिक ८०,००० चा टप्पा ओलांडला, बाजारात तेजी',
-    stories: [
-      'रिलायन्सच्या तिमाही नफ्यात १८% वाढ',
-      'GST संकलनात फेब्रुवारीत १२% वाढ',
-      'Infosys ने ३,५०० नव्या भरतीची घोषणा केली',
-    ],
-  },
-]
+    include: { category: true },
+  })
 
-const RECOMMENDED = [
-  { c: 'मनोरंजन', h: 'मराठी रंगभूमीचा ७५ वा वर्धापनदिन: \'नटसम्राट\' चे भव्य पुनःप्रदर्शन' },
-  { c: 'व्यवसाय', h: 'टाटा मोटर्सच्या इलेक्ट्रिक एसयूव्हीचे अनावरण, बुकिंग सुरू' },
-  { c: 'महाराष्ट्र', h: 'कोकणात पावसाने सरासरी ओलांडली, शेतकऱ्यांना दिलासा' },
-  { c: 'पुणे', h: 'पुणे विद्यापीठात नवीन AI संशोधन केंद्र सुरू होणार' },
-  { c: 'राजकारण', h: 'मनसेच्या अधिवेशनात राज ठाकरे यांचे आक्रमक भाषण' },
-  { c: 'क्रीडा', h: 'महाराष्ट्र केसरी कुस्ती स्पर्धेला कोल्हापुरात सुरुवात' },
-]
+  // Secondary: next 2 from different categories than hero
+  const secondaryNews = await prisma.news.findMany({
+    where: {
+      ...BASE_WHERE,
+      id: { not: heroNews?.id ?? 0 },
+      categoryId: { not: heroNews?.categoryId ?? undefined },
+    },
+    orderBy: { newsScore: { finalScore: 'desc' } },
+    include: { category: true },
+    take: 2,
+  })
 
-const MINI_TRENDING = [
-  'मनोज जरांगे पाटील आज औरंगाबादेत उपोषणाला बसणार',
-  'गणेशोत्सव २०२६ साठी मंडळांची तयारी सुरू, परवानग्या जलद',
-  'नवीन MPSC परीक्षा वेळापत्रक जाहीर, मे महिन्यात मुख्य परीक्षा',
-  'शिवसेना (UBT) विजय सत्रात ठाकरेंचे आक्रमक भाषण',
-  'महावितरणच्या वीजबिलात ८% वाढीचा प्रस्ताव',
-]
+  // Trending: top 5 by views last 2 hrs
+  const trendingNews = await prisma.news.findMany({
+    where: BASE_WHERE,
+    orderBy: { newsScore: { viewsLast2Hrs: 'desc' } },
+    include: { category: true },
+    take: 5,
+  })
 
-const PUNE_UPDATES = [
-  'हिंजवडीत वाहतूककोंडी कमी करण्यासाठी नवा फ्लायओव्हर मंजूर',
-  'पुणे विमानतळावर तीन नवीन आंतरराष्ट्रीय उड्डाणे सुरू',
-  'कात्रज-कोंढवा रस्त्याचे काम मार्चपर्यंत पूर्ण',
-]
+  const TRENDING_ITEMS = trendingNews.map((n) => ({
+    c: n.category?.name ?? '',
+    h: n.title ?? '',
+    href: '/news/' + n.slug,
+  }))
 
-export default function HomePage() {
+  // Mini trending
+  const miniTrendingNews = await prisma.news.findMany({
+    where: { ...BASE_WHERE, isMiniTrendingNews: true },
+    orderBy: { publishedDate: 'desc' },
+    take: 5,
+  })
+  const MINI_TRENDING = miniTrendingNews.map((n) => n.title ?? '')
+
+  // Category sections: 6 active categories (not home-page)
+  const activeCategories = await prisma.category.findMany({
+    where: { isActive: true, slug: { not: 'home-page' } },
+    orderBy: { sortOrder: 'asc' },
+    take: 6,
+  })
+
+  const categorySectionsRaw = await Promise.all(
+    activeCategories.map(async (cat) => {
+      const catNews = await prisma.news.findMany({
+        where: { ...BASE_WHERE, categoryId: cat.id },
+        orderBy: { newsScore: { finalScore: 'desc' } },
+        take: 4,
+      })
+      return { cat, news: catNews }
+    })
+  )
+
+  const CATEGORY_SECTIONS = categorySectionsRaw.map(({ cat, news }) => ({
+    cat: cat.name,
+    hero: {
+      title: news[0]?.title ?? '',
+      slug: news[0]?.slug ?? '',
+      featuredImage: news[0]?.featuredImage ?? undefined,
+    },
+    stories: news.slice(1).map((n) => ({ title: n.title ?? '', slug: n.slug ?? '' })),
+  }))
+
+  // Collect all used IDs to exclude from recommended
+  const usedIds = new Set<number>([
+    ...(heroNews ? [heroNews.id] : []),
+    ...secondaryNews.map((n) => n.id),
+    ...trendingNews.map((n) => n.id),
+    ...categorySectionsRaw.flatMap(({ news }) => news.map((n) => n.id)),
+  ])
+
+  // Recommended: next 6 not already used
+  const recommendedNews = await prisma.news.findMany({
+    where: { ...BASE_WHERE, id: { notIn: Array.from(usedIds) } },
+    orderBy: { newsScore: { finalScore: 'desc' } },
+    include: { category: true },
+    take: 6,
+  })
+
+  const RECOMMENDED = recommendedNews.map((n) => ({
+    c: n.category?.name ?? '',
+    h: n.title ?? '',
+    href: '/news/' + n.slug,
+  }))
+
+  // Pune sidebar updates
+  const puneUpdatesNews = await prisma.news.findMany({
+    where: {
+      ...BASE_WHERE,
+      district: { name: { contains: 'पुणे' } },
+    },
+    orderBy: { publishedDate: 'desc' },
+    take: 3,
+  })
+  const PUNE_UPDATES = puneUpdatesNews.map((n) => n.title ?? '')
+
   return (
     <div className={layout.page}>
       <Header />
@@ -118,20 +138,44 @@ export default function HomePage() {
 
             {/* Hero story */}
             <HeroCard
-              category="महाराष्ट्र"
-              headline="विधानसभेत सत्तासंघर्ष: सरकार स्थापनेच्या हालचालींना वेग, दिल्लीत रात्री बैठक"
-              subtitle="राज्यपाल भेट उद्या सकाळी; नवीन मंत्रिमंडळाची संभाव्य रचना समोर"
+              category={heroNews?.category?.name ?? ''}
+              headline={heroNews?.title ?? ''}
+              subtitle={heroNews?.summary ?? undefined}
+              href={'/news/' + heroNews?.slug}
+              imageSrc={heroNews?.featuredImage ?? undefined}
             />
 
             {/* Secondary stories */}
             <div>
               <div className={layout.secondaryGrid}>
-                <StandardCard category="राजकारण" headline="मुख्यमंत्र्यांच्या शपथविधीसाठी मुंबईत वानखेडेवर कार्यक्रम होणार" layout="col" />
-                <StandardCard category="पुणे" headline="पुणे महानगरपालिकेच्या अर्थसंकल्पात पाणीपुरवठा योजनेला प्राधान्य" layout="col" />
+                {secondaryNews[0] && (
+                  <StandardCard
+                    category={secondaryNews[0].category?.name ?? ''}
+                    headline={secondaryNews[0].title ?? ''}
+                    layout="col"
+                    href={'/news/' + secondaryNews[0].slug}
+                    imageSrc={secondaryNews[0].featuredImage ?? undefined}
+                  />
+                )}
+                {secondaryNews[1] && (
+                  <StandardCard
+                    category={secondaryNews[1].category?.name ?? ''}
+                    headline={secondaryNews[1].title ?? ''}
+                    layout="col"
+                    href={'/news/' + secondaryNews[1].slug}
+                    imageSrc={secondaryNews[1].featuredImage ?? undefined}
+                  />
+                )}
               </div>
               {/* Mobile-only third card */}
               <div className={layout.mobileOnly} style={{ marginTop: 16 }}>
-                <StandardCard category="गुन्हेगारी" headline="कोथरूडमध्ये बँक दरोडा प्रकरणी तीन संशयित ताब्यात" />
+                {secondaryNews[2] ? (
+                  <StandardCard
+                    category={secondaryNews[2].category?.name ?? ''}
+                    headline={secondaryNews[2].title ?? ''}
+                    href={'/news/' + secondaryNews[2].slug}
+                  />
+                ) : null}
               </div>
             </div>
 
@@ -190,7 +234,7 @@ export default function HomePage() {
               <CategoryUnderline name="Maharashtra" label="तुमच्यासाठी निवडक" />
               <div className={layout.recommendedGrid}>
                 {RECOMMENDED.map((s, i) => (
-                  <StandardCard key={i} category={s.c} headline={s.h} layout="col" />
+                  <StandardCard key={i} category={s.c} headline={s.h} layout="col" href={s.href} />
                 ))}
               </div>
             </div>

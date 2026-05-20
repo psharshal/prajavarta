@@ -8,13 +8,15 @@ interface FeaturedCardProps {
   headline: string
   kicker?: string
   badge?: string
+  href?: string
+  imageSrc?: string
 }
 
-export default function FeaturedCard({ category, headline, kicker, badge }: FeaturedCardProps) {
-  return (
+export default function FeaturedCard({ category, headline, kicker, badge, href, imageSrc }: FeaturedCardProps) {
+  const inner = (
     <article>
       <div style={{ position: 'relative' }}>
-        <ImagePlaceholder ratio="16/9" label="featured · 800×450" />
+        <ImagePlaceholder ratio="16/9" label="featured · 800×450" src={imageSrc} />
         {badge && <Badge type={badge} />}
       </div>
       <div style={{ paddingTop: 10 }}>
@@ -40,4 +42,5 @@ export default function FeaturedCard({ category, headline, kicker, badge }: Feat
       </div>
     </article>
   )
+  return href ? <a href={href} style={{ textDecoration: 'none', display: 'block' }}>{inner}</a> : inner
 }

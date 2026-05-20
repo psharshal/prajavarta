@@ -4,10 +4,11 @@ interface CompactListItemProps {
   n: number
   headline: string
   category?: string
+  href?: string
 }
 
-export default function CompactListItem({ n, headline, category }: CompactListItemProps) {
-  return (
+export default function CompactListItem({ n, headline, category, href }: CompactListItemProps) {
+  const content = (
     <li
       style={{
         display: 'grid',
@@ -59,4 +60,5 @@ export default function CompactListItem({ n, headline, category }: CompactListIt
       </div>
     </li>
   )
+  return href ? <a href={href} style={{ textDecoration: 'none' }}>{content}</a> : content
 }

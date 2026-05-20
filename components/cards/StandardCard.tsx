@@ -8,14 +8,18 @@ interface StandardCardProps {
   headline: string
   layout?: 'row' | 'col'
   badge?: string
+  href?: string
+  imageSrc?: string
 }
 
-export default function StandardCard({ category, headline, layout = 'row', badge }: StandardCardProps) {
+export default function StandardCard({ category, headline, layout = 'row', badge, href, imageSrc }: StandardCardProps) {
+  const linkStyle = href ? { textDecoration: 'none', display: 'block' } : undefined
+
   if (layout === 'row') {
-    return (
+    const inner = (
       <article style={{ display: 'grid', gridTemplateColumns: '112px 1fr', gap: 12, alignItems: 'start' }}>
         <div style={{ position: 'relative' }}>
-          <ImagePlaceholder ratio="1/1" label="240×240" />
+          <ImagePlaceholder ratio="1/1" label="240×240" src={imageSrc} />
           {badge && <Badge type={badge} small />}
         </div>
         <div>
@@ -36,12 +40,13 @@ export default function StandardCard({ category, headline, layout = 'row', badge
         </div>
       </article>
     )
+    return href ? <a href={href} style={linkStyle}>{inner}</a> : inner
   }
 
-  return (
+  const inner = (
     <article>
       <div style={{ position: 'relative' }}>
-        <ImagePlaceholder ratio="16/9" label="600×338" />
+        <ImagePlaceholder ratio="16/9" label="600×338" src={imageSrc} />
         {badge && <Badge type={badge} />}
       </div>
       <div style={{ paddingTop: 8 }}>
@@ -62,4 +67,5 @@ export default function StandardCard({ category, headline, layout = 'row', badge
       </div>
     </article>
   )
+  return href ? <a href={href} style={linkStyle}>{inner}</a> : inner
 }

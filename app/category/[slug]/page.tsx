@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import BreakingStrip from '@/components/layout/BreakingStrip'
@@ -10,57 +11,121 @@ import CompactListItem from '@/components/cards/CompactListItem'
 import TrendingModule from '@/components/modules/TrendingModule'
 import { catColor } from '@/lib/catColors'
 import layout from '@/styles/layout.module.css'
+import prisma from '@/lib/prisma'
+import { timeAgo } from '@/lib/helper'
 
-const CAT = 'महाराष्ट्र'
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
+  const BASE_WHERE = { status: 'PUBLISHED' as const, isActive: true }
 
-const LATEST = [
-  'नागपूर हिवाळी अधिवेशनाची तारीख निश्चित, १६ डिसेंबरपासून सुरुवात',
-  'औरंगाबाद नामांतर वाद पुन्हा चर्चेत, सुप्रीम कोर्टात सुनावणी',
-  'नाशिकमध्ये द्राक्ष निर्यातीत २०% घट, युरोपीय निर्बंधांचा परिणाम',
-  'विधान परिषदेच्या निवडणुकीचे वेळापत्रक जाहीर',
-  'मराठवाड्यात अवकाळी पावसाचा कहर, १२ जिल्ह्यांत पीकहानी',
-  'कोकणात पावसाने सरासरी ओलांडली, शेतकऱ्यांना दिलासा',
-]
+  const decodedSlug = decodeURIComponent(params.slug)
 
-const TRENDING_CAT = [
-  { c: CAT, h: 'मनोज जरांगे पाटील आज औरंगाबादेत उपोषणाला बसणार' },
-  { c: CAT, h: 'मुंबईत मेट्रो लाईन ३ चे काम पूर्णत्वाच्या मार्गावर' },
-  { c: CAT, h: 'कोकण किनारपट्टीवर पर्यटनाला उत्तेजन देण्यासाठी नवी योजना' },
-  { c: CAT, h: 'विदर्भातील शेतकऱ्यांसाठी १,२०० कोटींचे पॅकेज जाहीर' },
-  { c: CAT, h: 'मराठी भाषा विद्यापीठाच्या स्थापनेला राज्य मंत्रिमंडळाची मान्यता' },
-]
+  const category = await prisma.category.findFirst({
+    where: {
+      OR: [
+        { slug: decodedSlug },
+        { nameEnglish: decodedSlug },
+      ],
+    },
+  })
 
-const MOST_READ = [
-  'मराठा आरक्षणावर सर्वोच्च न्यायालयाची सुनावणी',
-  'शिवसेनेच्या अधिवेशनात ठाकरेंचे आक्रमक भाषण',
-  'महावितरणच्या वीजबिलात ८% वाढीचा प्रस्ताव',
-  'MPSC परीक्षेचे नवीन वेळापत्रक जाहीर',
-  'गणेशोत्सव परवानगी प्रक्रिया जलद',
-]
+  if (!category) return notFound()
 
-const SUBCITIES = [
-  { city: 'मुंबई', h: 'मेट्रो लाईन ३ चे काम अंतिम टप्प्यात' },
-  { city: 'पुणे', h: 'हिंजवडीत आयटी विस्तार योजना मंजूर' },
-  { city: 'नागपूर', h: 'हिवाळी अधिवेशनाची तयारी सुरू' },
-]
+  const CAT_WHERE = { ...BASE_WHERE, categoryId: category.id }
 
-const EVERGREEN = [
-  'महाराष्ट्राच्या स्थापनेची पूर्ण कथा: १९६० ते आजपर्यंत',
-  'संयुक्त महाराष्ट्र चळवळ — एका लढ्याची शोधयात्रा',
-  'मराठी अस्मितेची नवी ओळख: संस्कृती, साहित्य, चित्रपट',
-  'महाराष्ट्रातील १० ऐतिहासिक स्थळे जी प्रत्येकाने पाहावी',
-]
+  // Hero: top news in this category by finalScore
+  const heroNews = await prisma.news.findFirst({
+    where: CAT_WHERE,
+    orderBy: { newsScore: { finalScore: 'desc' } },
+    include: { category: true },
+  })
 
-const RELATED_TAGS = ['#मराठा आरक्षण', '#जरांगे पाटील', '#विधानसभा', '#मंत्रिमंडळ', '#फडणवीस', '#शिंदे', '#शेतकरी', '#कांदा', '#पाऊस', '#मुंबई', '#पुणे', '#नागपूर', '#हिवाळी अधिवेशन', '#सुप्रीम कोर्ट']
+  // Latest: next 6 in this category
+  const latestNews = await prisma.news.findMany({
+    where: {
+      ...CAT_WHERE,
+      id: { not: heroNews?.id ?? 0 },
+    },
+    orderBy: { publishedDate: 'desc' },
+    include: { category: true },
+    take: 6,
+  })
 
-const RECENTLY_UPDATED = [
-  { t: '६ मि.', h: 'विधान परिषद निवडणूक वेळापत्रक' },
-  { t: '१४ मि.', h: 'मुंबईत पावसाचा रेड अलर्ट' },
-  { t: '३२ मि.', h: 'नागपूरमध्ये जिल्हाधिकारी बदल' },
-  { t: '१ तास', h: 'सोलापूर बँक घोटाळा प्रकरणी अटक' },
-]
+  // Trending in category
+  const trendingNews = await prisma.news.findMany({
+    where: CAT_WHERE,
+    orderBy: { newsScore: { viewsLast2Hrs: 'desc' } },
+    include: { category: true },
+    take: 5,
+  })
 
-export default function CategoryPage() {
+  const TRENDING_CAT = trendingNews.map((n) => ({
+    c: n.category?.name ?? '',
+    h: n.title ?? '',
+    href: '/news/' + n.slug,
+  }))
+
+  // MostRead
+  const mostReadNews = await prisma.news.findMany({
+    where: CAT_WHERE,
+    orderBy: { viewCount: 'desc' },
+    take: 5,
+  })
+
+  // Evergreen: lower-scored but older articles (ordered by publishedDate asc as proxy)
+  const evergreenNews = await prisma.news.findMany({
+    where: CAT_WHERE,
+    orderBy: { publishedDate: 'asc' },
+    include: { category: true },
+    take: 4,
+  })
+
+  // Subcities: Pune, Mumbai, Nagpur — 1 news each in this category
+  const subCityNames = ['पुणे', 'मुंबई', 'नागपूर']
+  const subCityNewsRaw = await Promise.all(
+    subCityNames.map(async (cityName) => {
+      const district = await prisma.district.findFirst({ where: { name: { contains: cityName } } })
+      if (!district) return { city: cityName, news: null }
+      const news = await prisma.news.findFirst({
+        where: { ...CAT_WHERE, districtId: district.id },
+        orderBy: { newsScore: { finalScore: 'desc' } },
+      })
+      return { city: cityName, news }
+    })
+  )
+
+  const SUBCITIES = subCityNewsRaw.filter((s) => s.news !== null) as { city: string; news: NonNullable<typeof subCityNewsRaw[0]['news']> }[]
+
+  // RelatedTags: parse all news tags in this category, collect unique non-empty tags
+  const taggedNews = await prisma.news.findMany({
+    where: { ...CAT_WHERE, tags: { not: null } },
+    select: { tags: true },
+    take: 100,
+  })
+
+  const allTags = new Set<string>()
+  for (const n of taggedNews) {
+    if (n.tags) {
+      n.tags.split(',').map((t) => t.trim()).filter(Boolean).forEach((t) => allTags.add('#' + t))
+    }
+  }
+  const RELATED_TAGS = Array.from(allTags).slice(0, 14)
+
+  // RecentlyUpdated sidebar
+  const recentlyUpdated = await prisma.news.findMany({
+    where: CAT_WHERE,
+    orderBy: { updatedAt: 'desc' },
+    take: 4,
+  })
+
+  const RECENTLY_UPDATED = recentlyUpdated.map((n) => ({
+    t: timeAgo(n.updatedAt),
+    h: n.title ?? '',
+    href: '/news/' + n.slug,
+  }))
+
+  const CAT = category.name
+  const color = catColor(CAT)
+
   return (
     <div className={layout.page}>
       <Header />
@@ -73,7 +138,7 @@ export default function CategoryPage() {
 
       <div className={layout.container}>
         {/* Category header — full width */}
-        <div style={{ borderBottom: `4px solid ${catColor(CAT)}`, paddingBottom: 24, marginBottom: 32 }}>
+        <div style={{ borderBottom: `4px solid ${color}`, paddingBottom: 24, marginBottom: 32 }}>
           <h1
             className="mr"
             style={{
@@ -86,19 +151,14 @@ export default function CategoryPage() {
           >
             {CAT}
           </h1>
-          <p
-            className="mr"
-            style={{ margin: 0, fontSize: 'clamp(14px, 1.2vw, 17px)', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: 780 }}
-          >
-            महाराष्ट्रातून थेट: राजकारण, समाज, अर्थकारण, संस्कृती आणि शहर-ग्रामीण घडामोडी. राज्याच्या प्रत्येक कोपऱ्यातील विश्वासार्ह बातम्या.
-          </p>
-          <div style={{ display: 'flex', gap: 14, marginTop: 14, fontSize: 13, color: 'var(--text-tertiary)' }}>
-            <span className="mr">२,४८० बातम्या</span>
-            <span>·</span>
-            <span className="mr">अद्यतनित: २९ एप्रिल २०२६</span>
-            <span className={layout.desktopOnly}>·</span>
-            <span className={`mr ${layout.desktopOnly}`}>२१८ संपादक</span>
-          </div>
+          {category.description && (
+            <p
+              className="mr"
+              style={{ margin: 0, fontSize: 'clamp(14px, 1.2vw, 17px)', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: 780 }}
+            >
+              {category.description}
+            </p>
+          )}
         </div>
 
         <div className={layout.mainGrid}>
@@ -107,17 +167,29 @@ export default function CategoryPage() {
           <main className={layout.mainContent}>
 
             {/* Hero */}
-            <HeroCard
-              category={CAT}
-              headline="राज्यात कांद्याच्या भावात मोठी घसरण, शेतकऱ्यांचे आंदोलन सुरू"
-            />
+            {heroNews && (
+              <HeroCard
+                category={CAT}
+                headline={heroNews.title ?? ''}
+                subtitle={heroNews.summary ?? undefined}
+                href={'/news/' + heroNews.slug}
+                imageSrc={heroNews.featuredImage ?? undefined}
+              />
+            )}
 
             {/* Latest feed */}
             <div>
               <CategoryUnderline name={CAT} label="ताज्या बातम्या" />
               <div className={layout.latestGrid}>
-                {LATEST.map((h, i) => (
-                  <StandardCard key={i} category={CAT} headline={h} layout="col" />
+                {latestNews.map((n, i) => (
+                  <StandardCard
+                    key={i}
+                    category={CAT}
+                    headline={n.title ?? ''}
+                    layout="col"
+                    href={'/news/' + n.slug}
+                    imageSrc={n.featuredImage ?? undefined}
+                  />
                 ))}
               </div>
             </div>
@@ -141,8 +213,10 @@ export default function CategoryPage() {
             <div className={layout.mobileOnly}>
               <CategoryUnderline name={CAT} label="सर्वाधिक वाचलेले" />
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {MOST_READ.map((h, i) => (
-                  <li key={i} className="mr" style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', padding: '14px 0', borderBottom: '1px solid var(--border-default)', fontWeight: 500 }}>{h}</li>
+                {mostReadNews.map((n, i) => (
+                  <li key={i} className="mr" style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', padding: '14px 0', borderBottom: '1px solid var(--border-default)', fontWeight: 500 }}>
+                    <a href={'/news/' + n.slug} style={{ color: 'inherit', textDecoration: 'none' }}>{n.title}</a>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -153,24 +227,32 @@ export default function CategoryPage() {
             </div>
 
             {/* Subcategory modules — desktop only */}
-            <div className={layout.desktopOnly}>
-              <CategoryUnderline name={CAT} label="शहरांनुसार बातम्या" />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-                {SUBCITIES.map((s) => (
-                  <div key={s.city}>
-                    <div className="mr" style={{ fontSize: 13, fontWeight: 700, color: catColor(CAT), marginBottom: 10, letterSpacing: '0.04em' }}>{s.city}</div>
-                    <StandardCard layout="col" category={CAT} headline={s.h} />
-                  </div>
-                ))}
+            {SUBCITIES.length > 0 && (
+              <div className={layout.desktopOnly}>
+                <CategoryUnderline name={CAT} label="शहरांनुसार बातम्या" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+                  {SUBCITIES.map((s) => (
+                    <div key={s.city}>
+                      <div className="mr" style={{ fontSize: 13, fontWeight: 700, color: catColor(CAT), marginBottom: 10, letterSpacing: '0.04em' }}>{s.city}</div>
+                      <StandardCard
+                        layout="col"
+                        category={CAT}
+                        headline={s.news.title ?? ''}
+                        href={'/news/' + s.news.slug}
+                        imageSrc={s.news.featuredImage ?? undefined}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Mobile subcategories */}
             <div className={layout.mobileOnly}>
               <CategoryUnderline name={CAT} label="उप-विभाग" />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {['मुंबई', 'पुणे', 'नागपूर', 'औरंगाबाद', 'कोल्हापूर', 'नाशिक'].map((city) => (
-                  <a key={city} className="mr" style={{ padding: '14px 12px', border: '1px solid var(--border-default)', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', display: 'block', cursor: 'pointer' }}>
+                  <a key={city} href={`/city/${encodeURIComponent(city)}`} className="mr" style={{ padding: '14px 12px', border: '1px solid var(--border-default)', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', display: 'block', cursor: 'pointer', textDecoration: 'none' }}>
                     {city} →
                   </a>
                 ))}
@@ -181,25 +263,39 @@ export default function CategoryPage() {
             <div>
               <CategoryUnderline name={CAT} label="विशेष वाचा" />
               <div className={layout.latestGrid}>
-                {EVERGREEN.map((h, i) => (
-                  <StandardCard key={i} layout="col" category={CAT} headline={h} />
+                {evergreenNews.map((n, i) => (
+                  <StandardCard
+                    key={i}
+                    layout="col"
+                    category={CAT}
+                    headline={n.title ?? ''}
+                    href={'/news/' + n.slug}
+                    imageSrc={n.featuredImage ?? undefined}
+                  />
                 ))}
               </div>
             </div>
 
             {/* Related tags */}
-            <div>
-              <div className="mr" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14 }}>
-                संबंधित विषय · TOPIC CLUSTER
+            {RELATED_TAGS.length > 0 && (
+              <div>
+                <div className="mr" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14 }}>
+                  संबंधित विषय · TOPIC CLUSTER
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  {RELATED_TAGS.map((t) => (
+                    <a
+                      key={t}
+                      href={`/tag/${encodeURIComponent(t.replace('#', ''))}`}
+                      className="mr"
+                      style={{ padding: '8px 14px', background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', fontSize: 14, fontWeight: 600, borderRadius: 24, cursor: 'pointer', textDecoration: 'none' }}
+                    >
+                      {t}
+                    </a>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                {RELATED_TAGS.map((t) => (
-                  <span key={t} className="mr" style={{ padding: '8px 14px', background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', fontSize: 14, fontWeight: 600, borderRadius: 24, cursor: 'pointer' }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Mobile ad C3 */}
             <div className={layout.mobileOnly}>
@@ -214,8 +310,8 @@ export default function CategoryPage() {
             <div style={{ padding: 20, border: '1px solid var(--border-default)' }}>
               <CategoryUnderline name={CAT} label="सर्वाधिक वाचलेले" />
               <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {MOST_READ.map((h, i) => (
-                  <CompactListItem key={i} n={i + 1} headline={h} />
+                {mostReadNews.map((n, i) => (
+                  <CompactListItem key={i} n={i + 1} headline={n.title ?? ''} href={'/news/' + n.slug} />
                 ))}
               </ol>
             </div>
@@ -226,7 +322,9 @@ export default function CategoryPage() {
                 {RECENTLY_UPDATED.map((s, i) => (
                   <li key={i} style={{ borderBottom: '1px solid var(--border-default)', paddingBottom: 14 }}>
                     <div style={{ fontSize: 11, color: 'var(--color-live)', fontWeight: 700, marginBottom: 4, letterSpacing: '0.04em' }}>{s.t} पूर्वी</div>
-                    <p className="mr" style={{ margin: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.4 }}>{s.h}</p>
+                    <a href={s.href} style={{ textDecoration: 'none' }}>
+                      <p className="mr" style={{ margin: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: 'var(--text-primary)' }}>{s.h}</p>
+                    </a>
                   </li>
                 ))}
               </ul>
