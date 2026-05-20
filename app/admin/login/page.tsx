@@ -1,14 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,8 +19,8 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ email, password }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Login failed'); return }
-      router.push('/admin')
+      if (!res.ok) { setError(data.error ?? 'Invalid email or password'); return }
+      window.location.href = '/admin'
     } catch {
       setError('Network error')
     } finally {
