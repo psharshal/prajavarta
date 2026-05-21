@@ -1,4 +1,4 @@
-/* Shared styles */
+/* ── Shared ── */
 .iconBtn {
   background: none;
   border: none;
@@ -16,7 +16,7 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
-/* Mobile header */
+/* ── Mobile header ── */
 .mobileHeader {
   height: 56px;
   background: var(--brand-primary);
@@ -30,25 +30,11 @@
   z-index: 100;
 }
 
-.mobileLeft {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.mobileLeft  { display: flex; align-items: center; gap: 12px; }
+.mobileRight { display: flex; align-items: center; gap: 14px; }
+.langToggle  { font-size: 12px; font-weight: 600; opacity: 0.85; }
 
-.mobileRight {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.langToggle {
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-/* Desktop header */
+/* ── Desktop header ── */
 .desktopHeader {
   display: none;
   background: var(--brand-primary);
@@ -61,16 +47,22 @@
 .desktopInner {
   height: 56px;
   display: flex;
-  align-items: center;
+  align-items: stretch;      /* children stretch to full height */
   padding: 0 32px;
   max-width: 1440px;
   margin: 0 auto;
-  gap: 32px;
+  gap: 28px;
+}
+
+.logoWrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .desktopNav {
   display: flex;
-  gap: 22px;
+  gap: 2px;
   font-size: 14px;
   font-weight: 500;
   flex: 1;
@@ -81,13 +73,14 @@
   color: #fff;
   text-decoration: none;
   white-space: nowrap;
-  opacity: 0.9;
-  transition: opacity 0.15s;
+  opacity: 0.88;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s, background 0.15s;
+  border-radius: 2px;
 }
-
-.navLink:hover {
-  opacity: 1;
-}
+.navLink:hover { opacity: 1; background: rgba(255,255,255,0.12); }
 
 .desktopActions {
   display: flex;
@@ -95,12 +88,10 @@
   gap: 18px;
   font-size: 13px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.langToggleDesktop {
-  opacity: 0.85;
-  cursor: pointer;
-}
+.langToggleDesktop { opacity: 0.85; cursor: pointer; }
 
 .signinBtn {
   background: var(--brand-accent);
@@ -113,64 +104,67 @@
   cursor: pointer;
 }
 
-/* Responsive */
+/* ── Responsive ── */
 @media (min-width: 768px) {
-  .mobileHeader {
-    display: none;
-  }
-
-  .desktopHeader {
-    display: block;
-  }
+  .mobileHeader  { display: none; }
+  .desktopHeader { display: block; }
 }
 
-/* ── Dropdown nav items ── */
+/* ════════════════════════════════════════════════════════════════
+   DROPDOWN SYSTEM
+   KEY FIX: .dropdownWrapper stretches to full 56px header height.
+   This eliminates the cursor dead-zone between nav text and panel.
+   ════════════════════════════════════════════════════════════════ */
 .dropdownWrapper {
   position: relative;
   display: flex;
   align-items: center;
+  /* stretch fills full 56px — cursor stays inside wrapper on downward movement */
 }
 
 .navLinkDropdown {
   color: #fff;
   text-decoration: none;
   white-space: nowrap;
-  opacity: 0.9;
-  transition: opacity 0.15s;
+  opacity: 0.88;
+  transition: opacity 0.15s, background 0.15s;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  padding: 0 10px;
+  height: 100%;
+  border-radius: 2px;
 }
-
-.navLinkDropdown:hover {
-  opacity: 1;
-}
+.navLinkDropdown:hover,
+.dropdownWrapper:hover .navLinkDropdown { opacity: 1; background: rgba(255,255,255,0.12); }
 
 .navLinkDropdown::after {
   content: '▾';
   font-size: 9px;
-  opacity: 0.7;
+  opacity: 0.6;
   margin-top: 1px;
+  transition: transform 0.15s;
 }
+.dropdownWrapper:hover .navLinkDropdown::after { transform: rotate(180deg); }
 
-/* Dropdown panel base */
+/* ── Base dropdown panel ── */
 .dropdown {
   position: absolute;
-  top: calc(100% + 12px);
+  top: 100%;          /* flush with bottom of 56px wrapper — zero gap */
   left: 0;
   background: #fff;
   color: #1a1a1a;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.18);
   z-index: 200;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   transition: opacity 0.18s ease, transform 0.18s ease;
   border-top: 3px solid var(--brand-primary);
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 6px 6px;
 }
 
 .dropdownWrapper:hover .dropdown {
@@ -179,10 +173,12 @@
   transform: translateY(0);
 }
 
-/* Company simple dropdown */
+/* ── Company simple dropdown ── */
 .companyDropdown {
   width: 230px;
   padding: 6px 0;
+  right: 0;
+  left: auto;
 }
 
 .companyLink {
@@ -196,23 +192,132 @@
   transition: background 0.1s, color 0.1s;
   white-space: nowrap;
 }
+.companyLink:hover { background: #fff5f0; color: var(--brand-primary); }
 
-.companyLink:hover {
-  background: #fff5f0;
+.companyDivider { height: 1px; background: #eee; margin: 6px 0; }
+
+/* ── Category mega dropdown — horizontal news cards ── */
+.catMegaDropdown {
+  /* Full-width mega panel anchored to left of header via fixed positioning */
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 3px solid var(--brand-primary);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.16);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  /* override the base .dropdown positioning */
+  border-radius: 0;
+}
+
+.dropdownWrapper:hover .catMegaDropdown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.catMegaInner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px 32px 16px;
+}
+
+.catMegaHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.catMegaTitle {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--brand-primary);
 }
 
-.companyDivider {
-  height: 1px;
-  background: #eee;
-  margin: 6px 0;
+.catMegaViewAll {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-primary);
+  text-decoration: none;
+}
+.catMegaViewAll:hover { text-decoration: underline; }
+
+.catMegaCards {
+  display: flex;
+  gap: 16px;
+  overflow: hidden;
 }
 
-/* All News mega dropdown */
+/* Individual news card in the mega dropdown */
+.megaNavCard {
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+.megaNavCard:hover { opacity: 0.8; }
+
+.megaNavImg {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #f1f5f9;
+  display: block;
+}
+
+.megaNavImgPh {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 3px;
+  background: #f1f5f9;
+  display: block;
+}
+
+.megaNavCat {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.megaNavHeadline {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1a1a1a;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-family: var(--font-mr), sans-serif;
+  margin: 0;
+}
+
+.megaNavScore {
+  font-size: 10px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+/* ── All News mega dropdown (existing, revamped) ── */
 .megaDropdown {
-  width: 500px;
+  width: 540px;
   padding: 16px 16px 0;
-  left: -100px;
+  left: -120px;
 }
 
 .megaGrid {
@@ -229,7 +334,9 @@
   cursor: pointer;
   text-decoration: none;
   color: inherit;
+  transition: opacity 0.15s;
 }
+.megaItem:hover { opacity: 0.75; }
 
 .megaThumb {
   width: 68px;
@@ -238,6 +345,15 @@
   border-radius: 2px;
   overflow: hidden;
   background: #eee;
+  object-fit: cover;
+}
+
+.megaThumbPh {
+  width: 68px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: #f1f5f9;
 }
 
 .megaCat {
@@ -273,7 +389,4 @@
   font-family: var(--font-mr), sans-serif;
   transition: background 0.1s;
 }
-
-.megaViewAll:hover {
-  background: #fff5f0;
-}
+.megaViewAll:hover { background: #fff5f0; }
