@@ -11,7 +11,7 @@ function requireAdmin(req: NextRequest) {
   if (!token) return null
   const decoded = verifyToken(token)
   if (!decoded) return null
-  if (!['SUPER_ADMIN', 'MODERATOR'].includes(decoded.role)) return null
+  if (!['SUPER_ADMIN', 'MODERATOR', 'REPORTER', 'AD_MANAGER'].includes(decoded.role)) return null
   return decoded
 }
 
@@ -159,6 +159,11 @@ export async function PUT(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
     const slug = body.title ? await buildUniqueSlug(body.title, id) : undefined
+
+    // When pinning as hero, unpin all other articles first
+    if (body.pinToHomepage === true) {
+      await prisma.news.updateMany({ where: { pinToHomepage: true, id: { not: id } }, data: { pinToHomepage: false } })
+    }
 
     const updated = await prisma.news.update({
       where: { id },

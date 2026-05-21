@@ -7,7 +7,7 @@ function requireAdmin(req: NextRequest) {
   if (!token) return null
   const decoded = verifyToken(token)
   if (!decoded) return null
-  if (!['SUPER_ADMIN', 'MODERATOR'].includes(decoded.role)) return null
+  if (!['SUPER_ADMIN', 'MODERATOR', 'REPORTER', 'AD_MANAGER'].includes(decoded.role)) return null
   return decoded
 }
 
@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
       breakingNews,
       todayNews,
       topStories,
+      heroArticle,
     ] = await Promise.all([
       prisma.news.count({ where: { status: 'PUBLISHED' } }),
       prisma.user.count(),
@@ -60,6 +61,10 @@ export async function GET(req: NextRequest) {
           category: { select: { id: true, name: true, nameEnglish: true, slug: true } },
         },
       }),
+      prisma.news.findFirst({
+        where: { pinToHomepage: true },
+        select: { id: true, title: true, slug: true, featuredImage: true, publishedDate: true, category: { select: { name: true } } },
+      }),
     ])
 
     return NextResponse.json({
@@ -73,6 +78,7 @@ export async function GET(req: NextRequest) {
         breakingNews,
         todayNews,
         topStories,
+        heroArticle,
       },
     })
   } catch (err: any) {

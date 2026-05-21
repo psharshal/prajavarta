@@ -118,6 +118,27 @@ export default function EditNewsPage() {
     router.push('/admin/news')
   }
 
+  const handlePinAsHero = async () => {
+    if (!confirm('Pin this article as the Homepage Hero? This will unpin any currently pinned article.')) return
+    setSaving(true)
+    setError('')
+    try {
+      const res = await fetch('/api/admin/news', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: parseInt(id), pinToHomepage: true, status: 'PUBLISHED' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? 'Failed to pin'); return }
+      set('pinToHomepage', true)
+      set('status', 'PUBLISHED')
+      setSuccess('Article pinned as Homepage Hero!')
+      setTimeout(() => setSuccess(''), 4000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <div style={{ color: '#64748b', padding: 20 }}>Loading article...</div>
 
   return (
@@ -130,6 +151,13 @@ export default function EditNewsPage() {
             cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#dc2626',
           }}>
             Delete
+          </button>
+          <button onClick={handlePinAsHero} disabled={saving || form.pinToHomepage} style={{
+            padding: '9px 18px', background: form.pinToHomepage ? '#fef3c7' : '#f59e0b',
+            color: form.pinToHomepage ? '#92400e' : '#fff', border: form.pinToHomepage ? '1px solid #fcd34d' : 'none',
+            borderRadius: 8, cursor: form.pinToHomepage ? 'default' : 'pointer', fontSize: 14, fontWeight: 700,
+          }}>
+            {form.pinToHomepage ? 'Hero Pinned' : 'Pin as Hero'}
           </button>
           <button onClick={() => handleSubmit('PUBLISHED')} disabled={saving} style={{
             padding: '9px 18px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8,
@@ -253,26 +281,46 @@ export default function EditNewsPage() {
             <input value={form.featuredImage} onChange={e => set('featuredImage', e.target.value)} style={inputStyle} placeholder="or paste image URL..." />
           </div>
 
-          <div style={{ background: '#fff', borderRadius: 10, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Flags</h3>
-            {[
-              ['pinToHomepage', 'Pin to Homepage'],
-              ['isTrendingNews', 'Trending News'],
-              ['isMiniTrendingNews', 'Mini Trending'],
-            ].map(([key, label]) => (
-              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, cursor: 'pointer', fontSize: 14, color: '#374151' }}>
-                <input
-                  type="checkbox"
-                  checked={!!(form as any)[key]}
-                  onChange={e => set(key, e.target.checked)}
-                  style={{ width: 16, height: 16 }}
-                />
-                {label}
-              </label>
-            ))}
-            <div style={{ marginTop: 8 }}>
-              <label style={labelStyle}>Boost Score</label>
-              <input type="number" value={form.boostScore} onChange={e => set('boostScore', e.target.value)} style={inputStyle} min={0} max={500} />
+          <div style={{ background: form.pinToHomepage ? '#fffbeb' : '#fff', borderRadius: 10, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: form.pinToHomepage ? '2px solid #f59e0b' : '2px solid transparent' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Hero Override</h3>
+              {form.pinToHomepage && <span style={{ fontSize: 10, background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>ACTIVE</span>}
+            </div>
+            <button
+              onClick={form.pinToHomepage ? () => { set('pinToHomepage', false); handleSubmit() } : handlePinAsHero}
+              disabled={saving}
+              style={{
+                width: '100%', padding: '11px', fontSize: 14, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                background: form.pinToHomepage ? '#fef3c7' : '#f59e0b',
+                color: form.pinToHomepage ? '#92400e' : '#fff',
+                border: form.pinToHomepage ? '1px solid #fcd34d' : 'none',
+                marginBottom: 14,
+              }}
+            >
+              {form.pinToHomepage ? 'Unpin from Homepage' : 'Pin as Hero Article'}
+            </button>
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
+              Override the scoring system to force this article as the homepage hero. Only one article can be pinned at a time.
+            </p>
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
+              {[
+                ['isTrendingNews', 'Trending News'],
+                ['isMiniTrendingNews', 'Mini Trending'],
+              ].map(([key, label]) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, cursor: 'pointer', fontSize: 14, color: '#374151' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!(form as any)[key]}
+                    onChange={e => set(key, e.target.checked)}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  {label}
+                </label>
+              ))}
+              <div style={{ marginTop: 8 }}>
+                <label style={labelStyle}>Boost Score</label>
+                <input type="number" value={form.boostScore} onChange={e => set('boostScore', e.target.value)} style={inputStyle} min={0} max={500} />
+              </div>
             </div>
           </div>
         </div>

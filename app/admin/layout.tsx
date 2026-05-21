@@ -5,12 +5,19 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { AdminContext, type AdminUser } from './admin-context'
 
-const NAV = [
-  { href: '/admin', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/news', label: 'News', icon: '📰' },
-  { href: '/admin/categories', label: 'Categories', icon: '🗂️' },
-  { href: '/admin/users', label: 'Users', icon: '👥' },
+const ALL_NAV = [
+  { href: '/admin', label: 'Dashboard', icon: '📊', roles: ['SUPER_ADMIN', 'MODERATOR', 'REPORTER', 'AD_MANAGER'] },
+  { href: '/admin/news', label: 'News', icon: '📰', roles: ['SUPER_ADMIN', 'MODERATOR', 'REPORTER'] },
+  { href: '/admin/categories', label: 'Categories', icon: '🗂️', roles: ['SUPER_ADMIN', 'MODERATOR'] },
+  { href: '/admin/users', label: 'Users', icon: '👥', roles: ['SUPER_ADMIN', 'MODERATOR'] },
 ]
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  MODERATOR: 'Moderator',
+  REPORTER: 'Reporter',
+  AD_MANAGER: 'Ad Manager',
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null)
@@ -69,7 +76,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
           </div>
           <nav style={{ flex: 1, padding: '12px 8px' }}>
-            {NAV.map(item => {
+            {ALL_NAV.filter(item => !user || item.roles.includes(user.role)).map(item => {
               const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
               return (
                 <Link key={item.href} href={item.href} style={{
@@ -89,7 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {sidebarOpen && (
                 <div style={{ marginBottom: 8, fontSize: 12, color: '#64748b' }}>
                   <div style={{ color: '#e2e8f0', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name ?? user.email}</div>
-                  <div style={{ color: '#64748b' }}>{user.role}</div>
+                  <div style={{ color: '#64748b' }}>{ROLE_LABELS[user.role] ?? user.role}</div>
                 </div>
               )}
               <button onClick={logout} style={{
@@ -109,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <h1 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1e293b' }}>
-              {NAV.find(n => n.href === pathname || (n.href !== '/admin' && pathname.startsWith(n.href)))?.label ?? 'Admin'}
+              {ALL_NAV.find(n => n.href === pathname || (n.href !== '/admin' && pathname.startsWith(n.href)))?.label ?? 'Admin'}
             </h1>
             <a href="/" target="_blank" style={{ fontSize: 13, color: '#3b82f6', textDecoration: 'none' }}>
               View Site →

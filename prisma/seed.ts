@@ -1,7 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  datasources: { db: { url: process.env.DATABASE_URL ?? 'mysql://prajavarta:prajavarta_dev@localhost/prajavarta?socket=/run/mysqld/mysqld.sock' } },
+})
 
 const img = (seed: string) => `https://picsum.photos/seed/${seed}/1200/675`
 
@@ -22,6 +24,51 @@ async function main() {
     },
   })
   console.log('Super admin:', admin.email)
+
+  const modHash = await bcrypt.hash('Mod@123', 12)
+  await prisma.user.upsert({
+    where: { email: 'moderator@prajavarta.com' },
+    update: {},
+    create: {
+      email: 'moderator@prajavarta.com',
+      passwordHash: modHash,
+      name: 'संपादक',
+      nameEnglish: 'Moderator',
+      role: 'MODERATOR',
+      isActive: true,
+    },
+  })
+  console.log('Moderator seeded')
+
+  const reporterHash = await bcrypt.hash('Reporter@123', 12)
+  await prisma.user.upsert({
+    where: { email: 'reporter@prajavarta.com' },
+    update: {},
+    create: {
+      email: 'reporter@prajavarta.com',
+      passwordHash: reporterHash,
+      name: 'वार्ताहर',
+      nameEnglish: 'Reporter',
+      role: 'REPORTER',
+      isActive: true,
+    },
+  })
+  console.log('Reporter seeded')
+
+  const adHash = await bcrypt.hash('AdMgr@123', 12)
+  await prisma.user.upsert({
+    where: { email: 'admanager@prajavarta.com' },
+    update: {},
+    create: {
+      email: 'admanager@prajavarta.com',
+      passwordHash: adHash,
+      name: 'जाहिरात व्यवस्थापक',
+      nameEnglish: 'Ad Manager',
+      role: 'AD_MANAGER',
+      isActive: true,
+    },
+  })
+  console.log('Ad Manager seeded')
 
   const categoryData = [
     { name: 'महाराष्ट्र',  nameEnglish: 'maharashtra',  slug: 'maharashtra',  sortOrder: 1 },

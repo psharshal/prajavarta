@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+
+type HeroArticle = { id: number; title: string; slug: string; featuredImage: string | null; publishedDate: string | null; category: { name: string } | null }
 
 type Stats = {
   totalNews: number
@@ -12,6 +14,7 @@ type Stats = {
   breakingNews: number
   todayNews: number
   topStories: Array<{ id: number; title: string; slug: string; viewCount: number; publishedDate: string | null }>
+  heroArticle: HeroArticle | null
 }
 
 function StatCard({ label, value, color, href }: { label: string; value: number; color: string; href?: string }) {
@@ -29,11 +32,74 @@ function StatCard({ label, value, color, href }: { label: string; value: number;
   ) : content
 }
 
+function HeroOverrideCard({ hero, onUnpin }: { hero: HeroArticle | null; onUnpin: () => void }) {
+  const [unpinning, setUnpinning] = useState(false)
+
+  const handleUnpin = async () => {
+    if (!hero) return
+    if (!confirm('Remove hero pin from this article?')) return
+    setUnpinning(true)
+    await fetch('/api/admin/news', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: hero.id, pinToHomepage: false }),
+    })
+    setUnpinning(false)
+    onUnpin()
+  }
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 10, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderTop: '4px solid #f59e0b' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Hero Article Override</h2>
+        <span style={{ fontSize: 11, background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: 20, fontWeight: 600 }}>
+          PINNED
+        </span>
+      </div>
+      {hero ? (
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+          {hero.featuredImage ? (
+            <img src={hero.featuredImage} alt="" style={{ width: 100, height: 64, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 100, height: 64, background: '#f1f5f9', borderRadius: 6, flexShrink: 0 }} />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {hero.category && <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>{hero.category.name}</div>}
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', lineHeight: 1.4, marginBottom: 10 }}>{hero.title}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Link href={`/admin/news/${hero.id}/edit`} style={{
+                fontSize: 13, padding: '6px 14px', background: '#2563eb', color: '#fff',
+                borderRadius: 6, textDecoration: 'none', fontWeight: 600,
+              }}>
+                Edit Article
+              </Link>
+              <button onClick={handleUnpin} disabled={unpinning} style={{
+                fontSize: 13, padding: '6px 14px', background: '#fef2f2', color: '#dc2626',
+                border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+              }}>
+                {unpinning ? 'Removing...' : 'Unpin Hero'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ color: '#94a3b8', fontSize: 14 }}>
+          No article pinned as hero. The scoring system will automatically select the top article.
+          <br />
+          <Link href="/admin/news" style={{ color: '#3b82f6', fontSize: 13, marginTop: 8, display: 'inline-block' }}>
+            Browse articles to pin one →
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
     fetch('/api/admin/dashboard')
       .then(r => r.json())
       .then(d => {
@@ -42,6 +108,8 @@ export default function AdminDashboard() {
       })
       .catch(() => setError('Network error'))
   }, [])
+
+  useEffect(() => { loadStats() }, [loadStats])
 
   if (error) return <div style={{ color: '#ef4444', padding: 20 }}>{error}</div>
   if (!stats) return <div style={{ color: '#64748b', padding: 20 }}>Loading dashboard...</div>
@@ -56,6 +124,10 @@ export default function AdminDashboard() {
         <StatCard label="Total Users" value={stats.totalUsers} color="#8b5cf6" href="/admin/users" />
         <StatCard label="Categories" value={stats.totalCategories} color="#06b6d4" href="/admin/categories" />
         <StatCard label="Districts" value={stats.totalDistricts} color="#84cc16" />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <HeroOverrideCard hero={stats.heroArticle} onUnpin={loadStats} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
