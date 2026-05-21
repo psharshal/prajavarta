@@ -96,8 +96,7 @@ export default async function Header() {
           <button className={styles.iconBtn} aria-label="Search">
             <SearchIcon size={20} />
           </button>
-          <div className={styles.divider} />
-          <span className={styles.langToggle}>ENG</span>
+          <a href="/login" className={styles.signinBtnMobile}>Sign In</a>
         </div>
       </header>
 
@@ -191,8 +190,7 @@ export default async function Header() {
             <button className={styles.iconBtn} aria-label="Search">
               <SearchIcon size={18} />
             </button>
-            <span className={styles.langToggleDesktop}>ENG | मराठी</span>
-            <button className={styles.signinBtn}>Sign in</button>
+            <a href="/login" className={styles.signinBtn}>Sign In</a>
           </div>
         </div>
       </header>
