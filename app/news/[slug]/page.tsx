@@ -15,6 +15,51 @@ import layout from '@/styles/layout.module.css'
 import prisma from '@/lib/prisma'
 import { formatMarathiDate, timeAgo } from '@/lib/helper'
 
+// ── Article content splitter ─────────────────────────────────────────────────
+// Splits article HTML into 3 segments for ad + inline-related injection.
+//
+// All 5-para articles follow:  P1 → H3 → P2 → P3 → H3 → P4 → P5
+//   seg1 = P1 only           → DA3 injected after this
+//   seg2 = H3 + P2 + P3      → DA4 injected after this
+//   seg3 = H3 + P4 + P5      → inline related injected before this
+//
+// Dynamic boundary rule: seg2 ends at P2 for ≤4-para articles, P3 for 5+.
+// H3 tags are assigned to the same segment as their following paragraph.
+type ContentSegments = { seg1: string; seg2: string; seg3: string; paraCount: number }
+
+function splitArticleContent(html: string): ContentSegments {
+  if (!html) return { seg1: '', seg2: '', seg3: '', paraCount: 0 }
+
+  const elRe = /<(p|h3)(\s[^>]*)?>[\s\S]*?<\/\1>/g
+  const els: { tag: string; html: string }[] = []
+  let m: RegExpExecArray | null
+  while ((m = elRe.exec(html)) !== null) els.push({ tag: m[1], html: m[0] })
+
+  if (!els.length) return { seg1: html, seg2: '', seg3: '', paraCount: 0 }
+
+  const paraCount = els.filter(e => e.tag === 'p').length
+  // seg2 boundary: ends at P2 (≤4 para articles) or P3 (5+ para)
+  const seg2End = paraCount <= 4 ? 2 : 3
+
+  const segs = ['', '', '']
+  let pSeen = 0
+
+  for (const el of els) {
+    if (el.tag === 'p') {
+      pSeen++
+      const idx = pSeen <= 1 ? 0 : pSeen <= seg2End ? 1 : 2
+      segs[idx] += el.html
+    } else {
+      // h3 → same segment as the next paragraph
+      const nextP = pSeen + 1
+      const idx = nextP <= 1 ? 0 : nextP <= seg2End ? 1 : 2
+      segs[idx] += el.html
+    }
+  }
+
+  return { seg1: segs[0], seg2: segs[1], seg3: segs[2], paraCount }
+}
+
 const SHARE_BUTTONS = [
   { icon: <WhatsAppIcon size={14} />, color: '#25D366', label: 'WhatsApp' },
   { icon: <FacebookIcon size={14} />, color: '#1877F2', label: 'Facebook' },
@@ -128,6 +173,13 @@ export default async function ArticlePage({ params }: { params: { slug: string }
   const publishedStr = formatMarathiDate(article.publishedDate)
   const updatedStr = timeAgo(article.updatedAt)
 
+  const { seg1, seg2, seg3, paraCount } = splitArticleContent(article.description ?? '')
+  const bodyStyle: React.CSSProperties = {
+    fontSize: 'clamp(16px, 1.5vw, 18px)',
+    lineHeight: 1.7,
+    color: 'var(--text-primary)',
+  }
+
   return (
     <div className={layout.page}>
       <Header />
@@ -239,31 +291,81 @@ export default async function ArticlePage({ params }: { params: { slug: string }
 
             {/* ─ Article body ─ */}
             <div style={{ maxWidth: 680 }}>
-              <div
-                className="mr"
-                style={{ fontSize: 'clamp(16px, 1.5vw, 18px)', lineHeight: 1.7, color: 'var(--text-primary)' }}
-                dangerouslySetInnerHTML={{ __html: article.description ?? '' }}
-              />
 
-              {/* Mobile ad A2 */}
-              <div className={layout.mobileOnly} style={{ margin: '24px 0' }}>
-                <Ad id="A2" name="Mobile Article After P2" size="300×250" height={250} fluid />
+              {/* ── Segment 1: overview paragraph (P1) ── */}
+              {seg1 && (
+                <div className="mr" style={bodyStyle} dangerouslySetInnerHTML={{ __html: seg1 }} />
+              )}
+
+              {/* DA3 desktop / A2 mobile — immediately after overview para */}
+              <div className={layout.desktopOnly} style={{ margin: '28px auto', textAlign: 'center' }}>
+                <Ad id="DA3" name="Desktop Article After P1" size="300×250" width={300} height={250} style={{ display: 'inline-block' }} />
+              </div>
+              <div className={layout.mobileOnly} style={{ margin: '20px 0' }}>
+                <Ad id="A2" name="Mobile Article After P1" size="300×250" height={250} fluid />
               </div>
 
-              {/* Desktop ad DA3 */}
-              <div className={layout.desktopOnly} style={{ margin: '32px 0', textAlign: 'center' }}>
-                <Ad id="DA3" name="Desktop Article After P3" size="300×250" width={300} height={250} style={{ display: 'inline-block' }} />
+              {/* ── Segment 2: H3 + P2 + P3 (first section) ── */}
+              {seg2 && (
+                <div className="mr" style={bodyStyle} dangerouslySetInnerHTML={{ __html: seg2 }} />
+              )}
+
+              {/* DA4 desktop / A3 mobile — after first section (P2+P3) */}
+              <div className={layout.desktopOnly} style={{ margin: '28px auto', textAlign: 'center' }}>
+                <Ad id="DA4" name="Desktop Article After P3" size="300×250" width={300} height={250} style={{ display: 'inline-block' }} />
+              </div>
+              <div className={layout.mobileOnly} style={{ margin: '20px 0' }}>
+                <Ad id="A3" name="Mobile Article After P3" size="300×250 / Native" height={250} fluid />
               </div>
 
-              {/* Mobile ad A3 */}
-              <div className={layout.mobileOnly} style={{ margin: '24px 0' }}>
-                <Ad id="A3" name="Mobile Article After P7-8" size="300×250 / Native" height={250} fluid />
-              </div>
+              {/* ── Inline related news — section break before second half ── */}
+              {/* Shows when: article has ≥3 paras AND we have ≥2 related articles */}
+              {/* Position: after P3 for 5-para articles (between the two H3 sections) */}
+              {paraCount >= 3 && RELATED.length >= 2 && (
+                <div style={{
+                  margin: '4px 0 32px',
+                  padding: '14px 16px',
+                  background: 'var(--surface-secondary)',
+                  borderLeft: '3px solid var(--brand-primary)',
+                }}>
+                  <div className="mr" style={{
+                    fontSize: 10, fontWeight: 800, letterSpacing: '0.1em',
+                    color: 'var(--brand-primary)', textTransform: 'uppercase', marginBottom: 12,
+                  }}>
+                    हे पण वाचा
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    {RELATED.slice(0, 2).map((r, i) => (
+                      <a
+                        key={i}
+                        href={'/news/' + r.slug}
+                        style={{ display: 'flex', gap: 10, textDecoration: 'none', color: 'inherit', alignItems: 'flex-start' }}
+                      >
+                        {r.featuredImage
+                          ? <img src={r.featuredImage} alt="" style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }} />
+                          : <div style={{ width: 80, height: 52, background: '#e2e8f0', borderRadius: 2, flexShrink: 0 }} />
+                        }
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-primary)', textTransform: 'uppercase', marginBottom: 3 }}>
+                            {r.category?.name}
+                          </div>
+                          <p className="mr" style={{
+                            margin: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--text-primary)',
+                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                          }}>
+                            {r.title}
+                          </p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {/* Desktop ad DA4 */}
-              <div className={layout.desktopOnly} style={{ margin: '32px 0', textAlign: 'center' }}>
-                <Ad id="DA4" name="Desktop Article After P9" size="300×250" width={300} height={250} style={{ display: 'inline-block' }} />
-              </div>
+              {/* ── Segment 3: H3 + P4 + P5 (second section) ── */}
+              {seg3 && (
+                <div className="mr" style={bodyStyle} dangerouslySetInnerHTML={{ __html: seg3 }} />
+              )}
 
               {/* Tags */}
               {TAGS.length > 0 && (
