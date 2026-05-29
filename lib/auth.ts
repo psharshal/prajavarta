@@ -1,11 +1,18 @@
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { SignJWT, jwtVerify } from 'jose'
 
-const JWT_SECRET = process.env.JWT_SECRET!
+
+const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 
 export const AUTH_COOKIE_NAME = '_pv_at'
 export const ADMIN_AUTH_COOKIE_NAME = '_pv_admin_at'
 export const AUTHOR_AUTH_COOKIE_NAME = '_pv_author_at'
+
+export interface JwtPayload {
+  userId: number;
+  email: string;
+  role: string;
+}
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12)
@@ -15,13 +22,22 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash)
 }
 
-export function generateToken(userId: number, email: string, role: string): string {
-  return jwt.sign({ userId, email, role }, JWT_SECRET, { expiresIn: '7d' })
+export async function generateToken(userId: number, email: string, role: string) {
+  return await new SignJWT({userId, email, role})
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(secret);
 }
 
-export function verifyToken(token: string): { userId: number; email: string; role: string } | null {
+export async function verifyToken(token: string):Promise<JwtPayload | null> {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: number; email: string; role: string }
+    const { payload } = await jwtVerify(token, secret)
+    return {
+      userId: payload.userId as number,
+      email: payload.email as string,
+      role: payload.role as string,
+    };
   } catch {
     return null
   }

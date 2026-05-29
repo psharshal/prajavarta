@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyToken, ADMIN_AUTH_COOKIE_NAME } from '@/lib/auth'
 
-function requireSuperAdmin(req: NextRequest) {
+async function requireSuperAdmin(req: NextRequest) {
   const token = req.cookies.get(ADMIN_AUTH_COOKIE_NAME)?.value
   if (!token) return null
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   if (!decoded) return null
   if (decoded.role !== 'SUPER_ADMIN') return null
   return decoded

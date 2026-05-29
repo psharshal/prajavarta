@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyToken, ADMIN_AUTH_COOKIE_NAME } from '@/lib/auth'
 
-function requireAdmin(req: NextRequest) {
+async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(ADMIN_AUTH_COOKIE_NAME)?.value
   if (!token) return null
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   if (!decoded) return null
   if (!['SUPER_ADMIN', 'MODERATOR'].includes(decoded.role)) return null
   return decoded
@@ -17,7 +17,7 @@ function toInt(v: any): number | null {
 }
 
 export async function GET(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin =await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -98,7 +98,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

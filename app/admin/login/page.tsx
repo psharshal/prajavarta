@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Invalid email or password'); return }
-      window.location.href = '/admin'
+      window.location.replace('/admin') 
     } catch {
       setError('Network error')
     } finally {
@@ -51,12 +51,13 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 6 }}>
               Email
             </label>
             <input
+              name="email"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -73,6 +74,7 @@ export default function AdminLoginPage() {
               Password
             </label>
             <input
+              name="password"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}

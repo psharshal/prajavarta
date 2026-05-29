@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } })
 
-    const token = generateToken(user.id, user.email, user.role)
+    const token = await generateToken(user.id, user.email, user.role)
     const isStaff = STAFF_ROLES.includes(user.role)
 
     const res = NextResponse.json({

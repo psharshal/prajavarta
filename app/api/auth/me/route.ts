@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value
   if (!token) return NextResponse.json({ user: null }, { status: 401 })
 
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   if (!decoded) return NextResponse.json({ user: null }, { status: 401 })
 
   const user = await prisma.user.findUnique({
