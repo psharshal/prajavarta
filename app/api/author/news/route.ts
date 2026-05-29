@@ -3,10 +3,10 @@ import prisma from '@/lib/prisma'
 import { verifyToken, AUTHOR_AUTH_COOKIE_NAME } from '@/lib/auth'
 import { tagArticle } from '@/lib/tagger'
 
-function requireAuthor(req: NextRequest) {
+async function requireAuthor(req: NextRequest) {
   const token = req.cookies.get(AUTHOR_AUTH_COOKIE_NAME)?.value
   if (!token) return null
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   if (!decoded) return null
   if (decoded.role !== 'REPORTER') return null
   return decoded
@@ -37,7 +37,7 @@ async function buildUniqueSlug(title: string, excludeId?: number): Promise<strin
 }
 
 export async function GET(req: NextRequest) {
-  const author = requireAuthor(req)
+  const author = await requireAuthor(req)
   if (!author) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const author = requireAuthor(req)
+  const author = await requireAuthor(req)
   if (!author) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const author = requireAuthor(req)
+  const author = await requireAuthor(req)
   if (!author) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

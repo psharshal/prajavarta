@@ -5,10 +5,10 @@ const ALLOWED_FOLDERS = ['categories', 'news', 'authors', 'settings', 'main-adve
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 
-function requireAdmin(req: NextRequest) {
+async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(ADMIN_AUTH_COOKIE_NAME)?.value
   if (!token) return null
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   if (!decoded) return null
   if (!['SUPER_ADMIN', 'MODERATOR'].includes(decoded.role)) return null
   return decoded
@@ -30,7 +30,7 @@ function extFromMime(mime: string): string {
 const IS_VERCEL = !!process.env.VERCEL
 
 export async function POST(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

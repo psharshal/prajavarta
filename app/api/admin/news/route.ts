@@ -6,10 +6,10 @@ import { tagArticle } from '@/lib/tagger'
 type EditorialLabel = 'NORMAL' | 'FEATURED' | 'HERO_CANDIDATE' | 'MAIN_HERO' | 'BREAKING'
 type ArticleStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED'
 
-function requireAdmin(req: NextRequest) {
+async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(ADMIN_AUTH_COOKIE_NAME)?.value
   if (!token) return null
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   if (!decoded) return null
   if (!['SUPER_ADMIN', 'MODERATOR', 'REPORTER', 'AD_MANAGER'].includes(decoded.role)) return null
   return decoded
@@ -39,7 +39,7 @@ function toInt(v: any): number | null {
 }
 
 export async function GET(req: NextRequest) {
-  if (!requireAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = req.nextUrl
   const id = toInt(searchParams.get('id'))
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -197,7 +197,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const admin = requireAdmin(req)
+  const admin =  await requireAdmin(req)
   if (!admin || admin.role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const id = toInt(req.nextUrl.searchParams.get('id'))

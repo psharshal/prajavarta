@@ -8,7 +8,7 @@ const ADMIN_PATH = '/admin'
 const SUPER_MOD_ONLY = ['/admin/users', '/admin/categories', '/admin/settings']
 const AD_MANAGER_ALLOWED = ['/admin', '/admin/ads']
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   if (!pathname.startsWith(ADMIN_PATH) || PUBLIC_ADMIN_PATHS.includes(pathname)) {
@@ -20,7 +20,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/admin/login', req.url))
   }
 
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   const role = decoded?.role ?? ''
   const allowedRoles = ['SUPER_ADMIN', 'MODERATOR', 'REPORTER', 'AD_MANAGER']
   if (!decoded || !allowedRoles.includes(role)) {

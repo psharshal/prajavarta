@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     let saved = false
     const token = req.cookies.get(AUTH_COOKIE_NAME)?.value
     if (token) {
-      const decoded = verifyToken(token)
+      const decoded = await verifyToken(token)
       if (decoded) {
         const savedArticle = await prisma.savedArticle.findUnique({
           where: { userId_newsId: { userId: decoded.userId, newsId: article.id } },

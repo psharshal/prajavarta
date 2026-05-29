@@ -6,10 +6,10 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get(ADMIN_AUTH_COOKIE_NAME)?.value
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const decoded = verifyToken(token)
+  const decoded = await verifyToken(token)
   if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  if (!['SUPER_ADMIN', 'MODERATOR'].includes(decoded.role)) {
+  if (!['SUPER_ADMIN', 'MODERATOR', 'REPORTER', 'AD_MANAGER'].includes(decoded.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
