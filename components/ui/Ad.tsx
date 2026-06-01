@@ -1,4 +1,11 @@
+import { cache } from 'react'
+import prisma from '@/lib/prisma'
 import styles from './Ad.module.css'
+
+// One DB call per request, shared across all <Ad> renders on the same page
+const fetchBanner = cache(async () => {
+  return prisma.mainAdvertisementBanner.findFirst({ orderBy: { id: 'desc' } })
+})
 
 interface AdProps {
   id?: string
@@ -13,7 +20,10 @@ interface AdProps {
   className?: string
 }
 
-export default function Ad({ id, slot, name, size, width, height, sticky, fluid, style, className }: AdProps) {
+export default async function Ad({ id, slot, name, size, width, height, sticky, fluid, style, className }: AdProps) {
+  const banner = await fetchBanner()
+  if (!banner) return null
+
   const adId = id ?? slot ?? 'ad'
   const adSize = size ?? '300×250'
   return (
