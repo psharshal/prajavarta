@@ -24,11 +24,6 @@ function extFromMime(mime: string): string {
   return map[mime] ?? 'jpg'
 }
 
-// On Vercel: filesystem is read-only — uploads go to /tmp but don't persist.
-// Use Vercel Blob, Cloudinary, or paste the image URL directly in the admin panel.
-// On own server: full filesystem write works as expected.
-const IS_VERCEL = !!process.env.VERCEL
-
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -58,13 +53,6 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_SIZE_BYTES) {
       return NextResponse.json({ error: 'File exceeds 5 MB limit' }, { status: 400 })
-    }
-
-    if (IS_VERCEL) {
-      return NextResponse.json(
-        { error: 'File uploads are not supported on Vercel. Paste an image URL directly in the URL field below.' },
-        { status: 422 },
-      )
     }
 
     // Own-server path: write to public/uploads/

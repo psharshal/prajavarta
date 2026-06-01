@@ -5,7 +5,8 @@ import { computeScore, freshnessScore } from '@/lib/scoring'
 type EditorialLabel = 'NORMAL' | 'FEATURED' | 'HERO_CANDIDATE' | 'MAIN_HERO' | 'BREAKING'
 
 // Called by cron every 15 minutes.
-// Vercel: add to vercel.json crons. Own server: call via node-cron or system cron.
+// Called every 15 minutes via system cron or node-cron hitting GET /api/cron/score?secret=YOUR_SECRET
+// Your system cron entry on the dedicated server would look like: */15 * * * * curl -s "https://yourdomain.com/api/cron/score?secret=YOUR_CRON_SECRET"
 // Protect with CRON_SECRET env var.
 export async function GET(req: NextRequest) {
   // Accepts: x-cron-secret header (own server), Authorization Bearer (Vercel cron), or ?secret= param
