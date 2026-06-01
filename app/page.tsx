@@ -37,9 +37,9 @@ export default async function HomePage() {
     take: 2,
   })
 
-  // Trending: top 5 by views last 2 hrs
+  // Trending: editorially flagged, ordered by velocity
   const trendingNews = await prisma.news.findMany({
-    where: BASE_WHERE,
+    where: { ...BASE_WHERE, isTrendingNews: true },
     orderBy: { newsScore: { viewsLast2Hrs: 'desc' } },
     include: { category: true },
     take: 5,
