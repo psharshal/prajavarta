@@ -55,7 +55,7 @@ export default async function AllNewsPage({
       take: 15,
     }),
     prisma.news.findMany({
-      where: BASE_WHERE,
+      where: { ...BASE_WHERE, isTrendingNews: true },
       orderBy: { newsScore: { viewsLast2Hrs: 'desc' } },
       take: 5,
       include: { category: true },
