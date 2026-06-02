@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyToken, ADMIN_AUTH_COOKIE_NAME } from '@/lib/auth'
 import { tagArticle } from '@/lib/tagger'
+import { computeScore, freshnessScore } from '@/lib/scoring'
 
 type EditorialLabel = 'NORMAL' | 'FEATURED' | 'HERO_CANDIDATE' | 'MAIN_HERO' | 'BREAKING'
 type ArticleStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED'
@@ -64,18 +65,45 @@ export async function GET(req: NextRequest) {
     ...(status  && { status }),
   }
 
-  const [total, data] = await Promise.all([
+  const heroSelect = {
+    id: true, title: true, slug: true, pinExpiresAt: true, pinToHomepage: true,
+    category: { select: { name: true } },
+    newsScore: { select: { finalScore: true } },
+  }
+
+  const [total, data, adminPinned] = await Promise.all([
     prisma.news.count({ where }),
     prisma.news.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
-      include: { category: true, author: { select: { id: true, name: true } } },
+      include: {
+        category: true,
+        author: { select: { id: true, name: true } },
+        newsScore: { select: { finalScore: true } },
+      },
+    }),
+    prisma.news.findFirst({
+      where: { pinToHomepage: true },
+      select: heroSelect,
     }),
   ])
 
-  return NextResponse.json({ success: true, data, pagination: { total, page, limit, pages: Math.ceil(total / limit) } })
+  // If no admin pin, show the highest-scoring published article as the current hero
+  const hero = adminPinned ?? await prisma.news.findFirst({
+    where: { isActive: true, status: 'PUBLISHED' },
+    orderBy: { newsScore: { finalScore: 'desc' } },
+    select: heroSelect,
+  })
+
+  return NextResponse.json({
+    success: true,
+    data,
+    pinned: hero,
+    pinnedByAdmin: !!adminPinned,
+    pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -104,6 +132,7 @@ export async function POST(req: NextRequest) {
         isMiniTrendingNews: body.isMiniTrendingNews ?? false,
         editorialLabel:    (body.editorialLabel as EditorialLabel) ?? 'NORMAL',
         pinToHomepage:     body.pinToHomepage ?? false,
+        pinExpiresAt:      body.pinToHomepage ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null,
         boostScore:        toInt(body.boostScore) ?? 0,
         expireBoostAt:     body.expireBoostAt ? new Date(body.expireBoostAt) : null,
         status:            (body.status as ArticleStatus) ?? 'DRAFT',
@@ -160,9 +189,14 @@ export async function PUT(req: NextRequest) {
 
     const slug = body.title ? await buildUniqueSlug(body.title, id) : undefined
 
-    // When pinning as hero, unpin all other articles first
+    const PIN_DURATION_MS = 24 * 60 * 60 * 1000
+
+    // When pinning as hero, unpin all other articles and clear their expiry
     if (body.pinToHomepage === true) {
-      await prisma.news.updateMany({ where: { pinToHomepage: true, id: { not: id } }, data: { pinToHomepage: false } })
+      await prisma.news.updateMany({
+        where: { pinToHomepage: true, id: { not: id } },
+        data:  { pinToHomepage: false, pinExpiresAt: null },
+      })
     }
 
     const updated = await prisma.news.update({
@@ -179,6 +213,11 @@ export async function PUT(req: NextRequest) {
         isMiniTrendingNews: body.isMiniTrendingNews ?? false,
         editorialLabel:    (body.editorialLabel as EditorialLabel) ?? undefined,
         pinToHomepage:     body.pinToHomepage ?? undefined,
+        pinExpiresAt:      body.pinToHomepage === true
+                             ? new Date(Date.now() + PIN_DURATION_MS)
+                             : body.pinToHomepage === false
+                               ? null
+                               : undefined,
         boostScore:        toInt(body.boostScore) ?? undefined,
         expireBoostAt:     body.expireBoostAt ? new Date(body.expireBoostAt) : undefined,
         status:            (body.status as ArticleStatus) ?? undefined,
@@ -189,6 +228,32 @@ export async function PUT(req: NextRequest) {
         authorId:          toInt(body.authorId) ?? undefined,
       },
     })
+
+    // Immediately recompute score for any article (not just PUBLISHED) so
+    // boost/editorial changes are reflected instantly without waiting for cron
+    const full = await prisma.news.findUnique({
+      where: { id },
+      include: { newsScore: true, newsCategories: true },
+    })
+    if (full) {
+      const score = computeScore({
+        publishedDate:  full.publishedDate,
+        viewCount:      full.viewCount,
+        viewsLast2Hrs:  full.newsScore?.viewsLast2Hrs ?? 0,
+        editorialLabel: full.editorialLabel,
+        isBreakingNews: full.isBreakingNews,
+        boostScore:     full.boostScore,
+        expireBoostAt:  full.expireBoostAt,
+        topicRelevance: full.newsCategories[0]?.relevanceScore ?? 50,
+        locationScore:  50,
+        ctrScore:       full.newsScore?.ctrScore ?? 0,
+      }, 'homepage')
+      await prisma.newsScore.upsert({
+        where:  { newsId: id },
+        create: { newsId: id, finalScore: score, freshnessScore: freshnessScore(full.publishedDate), velocityScore: (full.newsScore?.viewsLast2Hrs ?? 0) * 0.4, viewsLast2Hrs: full.newsScore?.viewsLast2Hrs ?? 0, ctrScore: full.newsScore?.ctrScore ?? 0, editorialScore: full.newsScore?.editorialScore ?? 0, breakingBoost: full.isBreakingNews ? 100 : 0, manualBoost: full.boostScore },
+        update: { finalScore: score, freshnessScore: freshnessScore(full.publishedDate), velocityScore: (full.newsScore?.viewsLast2Hrs ?? 0) * 0.4, breakingBoost: full.isBreakingNews ? 100 : 0, manualBoost: full.boostScore },
+      })
+    }
 
     return NextResponse.json({ success: true, data: updated })
   } catch (err: any) {

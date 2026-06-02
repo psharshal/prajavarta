@@ -221,6 +221,7 @@ model News {
   // Editorial controls — replaces scattered booleans
   editorialLabel EditorialLabel @default(NORMAL) @map("editorial_label")
   pinToHomepage  Boolean        @default(false)  @map("pin_to_homepage")
+  pinExpiresAt   DateTime?                       @map("pin_expires_at")
   boostScore     Int            @default(0)       @map("boost_score")
   expireBoostAt  DateTime?                        @map("expire_boost_at")
 

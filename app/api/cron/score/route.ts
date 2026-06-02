@@ -17,10 +17,26 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Score articles published in the last 7 days
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const now = new Date()
+
+    // Auto-unpin hero articles whose pin has expired
+    await prisma.news.updateMany({
+      where: { pinToHomepage: true, pinExpiresAt: { not: null, lt: now } },
+      data:  { pinToHomepage: false, pinExpiresAt: null },
+    })
+
+    // Score: recent articles + unscored + any with active manual boost
+    const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const articles = await prisma.news.findMany({
-      where: { isActive: true, status: 'PUBLISHED', publishedDate: { gte: cutoff } },
+      where: {
+        isActive: true,
+        status: 'PUBLISHED',
+        OR: [
+          { publishedDate: { gte: cutoff } },          // published in last 7 days
+          { newsScore: { is: null } },                  // never scored yet
+          { boostScore: { gt: 0 } },                    // admin set a manual boost
+        ],
+      },
       include: { newsScore: true, newsCategories: { include: { category: true } } },
     })
 
@@ -36,11 +52,10 @@ export async function GET(req: NextRequest) {
           viewsLast2Hrs,
           editorialLabel: article.editorialLabel as EditorialLabel,
           isBreakingNews: article.isBreakingNews,
-          pinToHomepage:  article.pinToHomepage,
           boostScore:     article.boostScore,
           expireBoostAt:  article.expireBoostAt,
           topicRelevance: article.newsCategories[0]?.relevanceScore ?? 50,
-          locationScore:  50, // neutral for cron; geo boosts applied per-request
+          locationScore:  50,
           ctrScore:       article.newsScore?.ctrScore ?? 0,
         },
         'homepage'
@@ -65,6 +80,7 @@ export async function GET(req: NextRequest) {
           finalScore,
           freshnessScore: fresh,
           velocityScore:  viewsLast2Hrs * 0.4,
+          viewsLast2Hrs,
           breakingBoost:  article.isBreakingNews ? 100 : 0,
           manualBoost:    article.boostScore,
         },
