@@ -481,34 +481,6 @@ export default async function ArticlePage({ params }: { params: { slug: string }
               </ul>
             </div>
 
-            {/* ── Score Breakdown (Architecture Demo) ── */}
-            {article.newsScore && (
-              <div style={{ padding: 20, border: '2px solid #e63946', background: '#fff9f9' }}>
-                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#e63946', textTransform: 'uppercase', marginBottom: 12 }}>
-                  NewsScore — Architecture
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {[
-                    { label: 'Final Score', val: article.newsScore.finalScore.toFixed(1), color: '#e63946', bold: true },
-                    { label: 'Freshness', val: article.newsScore.freshnessScore.toFixed(1), color: '#0ea5e9' },
-                    { label: 'Velocity (2hr views)', val: `${article.newsScore.viewsLast2Hrs} → ${article.newsScore.velocityScore.toFixed(1)}`, color: '#10b981' },
-                    { label: 'Editorial Label', val: article.editorialLabel, color: '#8b5cf6' },
-                    { label: 'Breaking Boost', val: article.isBreakingNews ? '+100' : '0', color: '#f97316' },
-                    { label: 'Pinned', val: article.pinToHomepage ? '+200' : '0', color: '#f59e0b' },
-                    { label: 'View Count', val: article.viewCount.toString(), color: '#64748b' },
-                  ].map(row => (
-                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-                      <span style={{ color: '#64748b' }}>{row.label}</span>
-                      <span style={{ fontWeight: row.bold ? 800 : 600, color: row.color, fontFamily: 'monospace' }}>{row.val}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 12, fontSize: 11, color: '#94a3b8', lineHeight: 1.5 }}>
-                  Score = 0.3×freshness + 0.15×velocity + 0.1×editorial + breaking + pin
-                </div>
-              </div>
-            )}
-
             <Newsletter />
 
             {/* Fold 3 */}

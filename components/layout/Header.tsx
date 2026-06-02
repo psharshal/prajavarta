@@ -133,9 +133,6 @@ export default async function Header() {
                             }
                             <div className={styles.megaNavCat}>{art.category?.name ?? nav.label}</div>
                             <p className={styles.megaNavHeadline}>{art.title}</p>
-                            {art.newsScore && (
-                              <span className={styles.megaNavScore}>Score: {art.newsScore.finalScore.toFixed(0)}</span>
-                            )}
                           </a>
                         ))}
                       </div>

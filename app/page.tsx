@@ -22,7 +22,7 @@ export default async function HomePage() {
       { pinToHomepage: 'desc' },
       { newsScore: { finalScore: 'desc' } },
     ],
-    include: { category: true, newsScore: true },
+    include: { category: true },
   })
 
   // Secondary: next 2 from different categories than hero
@@ -144,35 +144,6 @@ export default async function HomePage() {
               href={'/news/' + heroNews?.slug}
               imageSrc={heroNews?.featuredImage ?? undefined}
             />
-
-            {/* Scoring system — architecture demo panel */}
-            {heroNews?.newsScore && (
-              <div style={{
-                background: 'linear-gradient(135deg,#0f172a 0%,#1e293b 100%)',
-                border: '1px solid #334155', borderRadius: 8, padding: '14px 18px',
-                display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center',
-              }}>
-                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', color: '#e63946', textTransform: 'uppercase', flexShrink: 0 }}>
-                  🏆 Hero Article — Scoring System
-                </div>
-                {[
-                  { label: 'Final Score', val: heroNews.newsScore.finalScore.toFixed(1), color: '#e63946' },
-                  { label: 'Freshness', val: heroNews.newsScore.freshnessScore.toFixed(1), color: '#38bdf8' },
-                  { label: 'Velocity', val: `${heroNews.newsScore.viewsLast2Hrs} views/2hr`, color: '#34d399' },
-                  { label: 'Pinned', val: heroNews.pinToHomepage ? '✓ +200' : '—', color: '#fbbf24' },
-                  { label: 'Breaking', val: heroNews.isBreakingNews ? '✓ +100' : '—', color: '#f97316' },
-                  { label: 'Why this article?', val: heroNews.pinToHomepage ? 'Editor pinned' : 'Highest score', color: '#a78bfa' },
-                ].map(item => (
-                  <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: 6 }}>
-                    <span style={{ fontSize: 9, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{item.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: item.color, fontFamily: 'monospace' }}>{item.val}</span>
-                  </div>
-                ))}
-                <a href={`/news/${heroNews.slug}`} style={{ marginLeft: 'auto', fontSize: 11, color: '#64748b', textDecoration: 'none' }}>
-                  View full breakdown →
-                </a>
-              </div>
-            )}
 
             {/* Secondary stories */}
             <div>
