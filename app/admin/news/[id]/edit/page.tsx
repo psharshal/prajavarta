@@ -30,7 +30,9 @@ export default function EditNewsPage() {
     isBreakingNews: false, isTrendingNews: false, isMiniTrendingNews: false,
     pinToHomepage: false, boostScore: '0', publishedDate: '',
     videoUrl: '', videoId: '',
+    pinExpiresAt: '' as string,
   })
+  const [pinDurationHours, setPinDurationHours] = useState('24')
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +64,7 @@ export default function EditNewsPage() {
           publishedDate: a.publishedDate ? new Date(a.publishedDate).toISOString().slice(0, 16) : '',
           videoUrl: a.videoUrl ?? '',
           videoId: a.videoId ?? '',
+          pinExpiresAt: a.pinExpiresAt ?? '',
         })
       }
     }).finally(() => setLoading(false))
@@ -119,20 +122,45 @@ export default function EditNewsPage() {
   }
 
   const handlePinAsHero = async () => {
-    if (!confirm('Pin this article as the Homepage Hero? This will unpin any currently pinned article.')) return
+    const hrs = parseInt(pinDurationHours)
+    if (!hrs || hrs < 1) {
+      setError('Pin duration in hours is required (minimum 1 hour)')
+      return
+    }
     setSaving(true)
     setError('')
     try {
       const res = await fetch('/api/admin/news', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: parseInt(id), pinToHomepage: true, status: 'PUBLISHED' }),
+        body: JSON.stringify({ id: parseInt(id), pinToHomepage: true, pinDurationHours: hrs, status: 'PUBLISHED' }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Failed to pin'); return }
       set('pinToHomepage', true)
       set('status', 'PUBLISHED')
-      setSuccess('Article pinned as Homepage Hero!')
+      set('pinExpiresAt', new Date(Date.now() + hrs * 3600000).toISOString())
+      setSuccess(`Pinned as Homepage Hero for ${hrs} hour${hrs > 1 ? 's' : ''}!`)
+      setTimeout(() => setSuccess(''), 4000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUnpin = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      const res = await fetch('/api/admin/news', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: parseInt(id), pinToHomepage: false }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? 'Failed to unpin'); return }
+      set('pinToHomepage', false)
+      set('pinExpiresAt', '')
+      setSuccess('Article unpinned. Scoring system will select hero automatically.')
       setTimeout(() => setSuccess(''), 4000)
     } finally {
       setSaving(false)
@@ -152,13 +180,14 @@ export default function EditNewsPage() {
           }}>
             Delete
           </button>
-          <button onClick={handlePinAsHero} disabled={saving || form.pinToHomepage} style={{
-            padding: '9px 18px', background: form.pinToHomepage ? '#fef3c7' : '#f59e0b',
-            color: form.pinToHomepage ? '#92400e' : '#fff', border: form.pinToHomepage ? '1px solid #fcd34d' : 'none',
-            borderRadius: 8, cursor: form.pinToHomepage ? 'default' : 'pointer', fontSize: 14, fontWeight: 700,
-          }}>
-            {form.pinToHomepage ? 'Hero Pinned' : 'Pin as Hero'}
-          </button>
+          {form.pinToHomepage && (
+            <span style={{
+              padding: '9px 18px', background: '#fef3c7', border: '1px solid #fcd34d',
+              borderRadius: 8, fontSize: 14, fontWeight: 700, color: '#92400e',
+            }}>
+              📌 Hero Active
+            </span>
+          )}
           <button onClick={() => handleSubmit('PUBLISHED')} disabled={saving} style={{
             padding: '9px 18px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8,
             cursor: 'pointer', fontSize: 14, fontWeight: 600,
@@ -286,23 +315,73 @@ export default function EditNewsPage() {
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Hero Override</h3>
               {form.pinToHomepage && <span style={{ fontSize: 10, background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>ACTIVE</span>}
             </div>
-            <button
-              onClick={form.pinToHomepage ? () => { set('pinToHomepage', false); handleSubmit() } : handlePinAsHero}
-              disabled={saving}
-              style={{
-                width: '100%', padding: '11px', fontSize: 14, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
-                background: form.pinToHomepage ? '#fef3c7' : '#f59e0b',
-                color: form.pinToHomepage ? '#92400e' : '#fff',
-                border: form.pinToHomepage ? '1px solid #fcd34d' : 'none',
-                marginBottom: 14,
-              }}
-            >
-              {form.pinToHomepage ? 'Unpin from Homepage' : 'Pin as Hero Article'}
-            </button>
-            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
-              Override the scoring system to force this article as the homepage hero. Only one article can be pinned at a time.
-            </p>
-            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
+
+            {form.pinToHomepage ? (
+              <>
+                {form.pinExpiresAt && (
+                  <div style={{ background: '#fef3c7', borderRadius: 8, padding: '10px 14px', marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, color: '#92400e', fontWeight: 700, marginBottom: 2 }}>Pinned until</div>
+                    <div style={{ fontSize: 13, color: '#78350f', fontWeight: 600 }}>
+                      {new Date(form.pinExpiresAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#b45309', marginTop: 4 }}>
+                      Auto-unpins when time expires. Highest scorer takes over.
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleUnpin}
+                  disabled={saving}
+                  style={{
+                    width: '100%', padding: '11px', fontSize: 14, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                    background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d',
+                  }}
+                >
+                  Unpin from Homepage
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ ...labelStyle, color: '#b45309' }}>
+                    Pin Duration (hours) <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={pinDurationHours}
+                    onKeyDown={e => ['-', '+', '.', 'e', 'E'].includes(e.key) && e.preventDefault()}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      setPinDurationHours(val)
+                    }}
+                    min={1}
+                    max={168}
+                    step={1}
+                    required
+                    placeholder="e.g. 6"
+                    style={{ ...inputStyle, borderColor: '#f59e0b' }}
+                  />
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                    Required. Max 168 hrs (7 days). Auto-unpins after this time.
+                  </div>
+                </div>
+                <button
+                  onClick={handlePinAsHero}
+                  disabled={saving}
+                  style={{
+                    width: '100%', padding: '11px', fontSize: 14, fontWeight: 700, borderRadius: 8,
+                    cursor: 'pointer', background: '#f59e0b', color: '#fff', border: 'none',
+                  }}
+                >
+                  Pin as Hero Article
+                </button>
+                <p style={{ margin: '10px 0 0', fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
+                  Overrides the scoring system. Only one article can be pinned at a time.
+                </p>
+              </>
+            )}
+
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14, marginTop: 16 }}>
               {[
                 ['isTrendingNews', 'Trending News'],
                 ['isMiniTrendingNews', 'Mini Trending'],
