@@ -3,7 +3,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 
-type HeroArticle = { id: number; title: string; slug: string; featuredImage: string | null; publishedDate: string | null; category: { name: string } | null }
+type HeroArticle = {
+  id: number; title: string; slug: string; featuredImage: string | null
+  publishedDate: string | null; pinExpiresAt: string | null
+  category: { name: string } | null
+  newsScore: { finalScore: number } | null
+}
 
 type Stats = {
   totalNews: number
@@ -15,6 +20,7 @@ type Stats = {
   todayNews: number
   topStories: Array<{ id: number; title: string; slug: string; viewCount: number; publishedDate: string | null }>
   heroArticle: HeroArticle | null
+  heroIsPinned: boolean
 }
 
 function StatCard({ label, value, color, href }: { label: string; value: number; color: string; href?: string }) {
@@ -32,7 +38,7 @@ function StatCard({ label, value, color, href }: { label: string; value: number;
   ) : content
 }
 
-function HeroOverrideCard({ hero, onUnpin }: { hero: HeroArticle | null; onUnpin: () => void }) {
+function HeroOverrideCard({ hero, isPinned, onUnpin }: { hero: HeroArticle | null; isPinned: boolean; onUnpin: () => void }) {
   const [unpinning, setUnpinning] = useState(false)
 
   const handleUnpin = async () => {
@@ -48,14 +54,23 @@ function HeroOverrideCard({ hero, onUnpin }: { hero: HeroArticle | null; onUnpin
     onUnpin()
   }
 
+  const borderColor = isPinned ? '#f59e0b' : '#10b981'
+
   return (
-    <div style={{ background: '#fff', borderRadius: 10, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderTop: '4px solid #f59e0b' }}>
+    <div style={{ background: '#fff', borderRadius: 10, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderTop: `4px solid ${borderColor}` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Hero Article Override</h2>
-        <span style={{ fontSize: 11, background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: 20, fontWeight: 600 }}>
-          PINNED
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#1e293b' }}>
+          {isPinned ? 'Hero Article Override' : 'Current Hero Article'}
+        </h2>
+        <span style={{
+          fontSize: 11, padding: '3px 8px', borderRadius: 20, fontWeight: 600,
+          background: isPinned ? '#fef3c7' : '#dcfce7',
+          color: isPinned ? '#92400e' : '#166534',
+        }}>
+          {isPinned ? '📌 PINNED' : '🏆 SCORE WINNER'}
         </span>
       </div>
+
       {hero ? (
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
           {hero.featuredImage ? (
@@ -64,8 +79,24 @@ function HeroOverrideCard({ hero, onUnpin }: { hero: HeroArticle | null; onUnpin
             <div style={{ width: 100, height: 64, background: '#f1f5f9', borderRadius: 6, flexShrink: 0 }} />
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {hero.category && <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>{hero.category.name}</div>}
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', lineHeight: 1.4, marginBottom: 10 }}>{hero.title}</div>
+            {hero.category && (
+              <div style={{ fontSize: 11, fontWeight: 700, color: borderColor, marginBottom: 4 }}>{hero.category.name}</div>
+            )}
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', lineHeight: 1.4, marginBottom: 6 }}>{hero.title}</div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+              {hero.newsScore?.finalScore != null && (
+                <span style={{ fontSize: 12, color: '#64748b' }}>
+                  Score: <strong style={{ color: '#1e293b' }}>{hero.newsScore.finalScore.toFixed(1)}</strong>
+                </span>
+              )}
+              {isPinned && hero.pinExpiresAt && (
+                <span style={{ fontSize: 12, color: '#92400e' }}>
+                  Expires: <strong>{new Date(hero.pinExpiresAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</strong>
+                </span>
+              )}
+            </div>
+
             <div style={{ display: 'flex', gap: 8 }}>
               <Link href={`/admin/news/${hero.id}/edit`} style={{
                 fontSize: 13, padding: '6px 14px', background: '#2563eb', color: '#fff',
@@ -73,22 +104,20 @@ function HeroOverrideCard({ hero, onUnpin }: { hero: HeroArticle | null; onUnpin
               }}>
                 Edit Article
               </Link>
-              <button onClick={handleUnpin} disabled={unpinning} style={{
-                fontSize: 13, padding: '6px 14px', background: '#fef2f2', color: '#dc2626',
-                border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
-              }}>
-                {unpinning ? 'Removing...' : 'Unpin Hero'}
-              </button>
+              {isPinned && (
+                <button onClick={handleUnpin} disabled={unpinning} style={{
+                  fontSize: 13, padding: '6px 14px', background: '#fef2f2', color: '#dc2626',
+                  border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+                }}>
+                  {unpinning ? 'Removing...' : 'Unpin Hero'}
+                </button>
+              )}
             </div>
           </div>
         </div>
       ) : (
         <div style={{ color: '#94a3b8', fontSize: 14 }}>
-          No article pinned as hero. The scoring system will automatically select the top article.
-          <br />
-          <Link href="/admin/news" style={{ color: '#3b82f6', fontSize: 13, marginTop: 8, display: 'inline-block' }}>
-            Browse articles to pin one →
-          </Link>
+          No published articles found. Publish an article to see it here.
         </div>
       )}
     </div>
@@ -127,7 +156,7 @@ export default function AdminDashboard() {
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <HeroOverrideCard hero={stats.heroArticle} onUnpin={loadStats} />
+        <HeroOverrideCard hero={stats.heroArticle} isPinned={stats.heroIsPinned} onUnpin={loadStats} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
