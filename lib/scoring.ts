@@ -26,7 +26,6 @@ interface ScoreInputs {
   viewsLast2Hrs:   number
   editorialLabel:  EditorialLabel
   isBreakingNews:  boolean
-  pinToHomepage:   boolean
   boostScore:      number
   expireBoostAt:   Date | null
   // From NewsCategory join
@@ -62,9 +61,10 @@ export function computeScore(inputs: ScoreInputs, context: FeedContext = 'homepa
   // Hard overrides
   let score = base
   if (inputs.isBreakingNews || inputs.editorialLabel === 'BREAKING') score += 100
-  if (inputs.pinToHomepage) score += 200
 
   // Manual boost (time-limited)
+  // Note: pinToHomepage is NOT scored here — pin priority is handled by
+  // ORDER BY pinToHomepage DESC in all homepage/feed queries.
   const boostActive =
     inputs.boostScore > 0 &&
     (!inputs.expireBoostAt || new Date(inputs.expireBoostAt) > new Date())

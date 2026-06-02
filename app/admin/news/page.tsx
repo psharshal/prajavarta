@@ -11,10 +11,21 @@ type Article = {
   status: string
   editorialLabel: string
   isBreakingNews: boolean
+  pinToHomepage: boolean
   publishedDate: string | null
   createdAt: string
   category: { name: string } | null
   author: { id: number; name: string } | null
+  newsScore: { finalScore: number } | null
+}
+
+type PinnedArticle = {
+  id: number
+  title: string
+  slug: string
+  pinExpiresAt: string | null
+  category: { name: string } | null
+  newsScore: { finalScore: number } | null
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -31,6 +42,8 @@ export default function AdminNewsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [articles, setArticles] = useState<Article[]>([])
+  const [pinned, setPinned] = useState<PinnedArticle | null>(null)
+  const [pinnedByAdmin, setPinnedByAdmin] = useState(false)
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -48,6 +61,8 @@ export default function AdminNewsPage() {
     const data = await res.json()
     if (data.success) {
       setArticles(data.data)
+      setPinned(data.pinned ?? null)
+      setPinnedByAdmin(data.pinnedByAdmin ?? false)
       setTotal(data.pagination.total)
       setPages(data.pagination.pages)
     }
@@ -75,7 +90,7 @@ export default function AdminNewsPage() {
   return (
     <div>
       {/* Toolbar */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Link href="/admin/news/create" style={{
           padding: '10px 18px', background: '#2563eb', color: '#fff', borderRadius: 8,
           textDecoration: 'none', fontWeight: 600, fontSize: 14, flexShrink: 0,
@@ -114,6 +129,58 @@ export default function AdminNewsPage() {
         </select>
       </div>
 
+      {/* Pinned hero banner */}
+      {pinned ? (
+        <div style={{
+          background: pinnedByAdmin ? '#fffbeb' : '#f0fdf4',
+          border: `1px solid ${pinnedByAdmin ? '#fde68a' : '#bbf7d0'}`,
+          borderRadius: 8, padding: '12px 16px', marginBottom: 16,
+          display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: 20 }}>{pinnedByAdmin ? '📌' : '🏆'}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: pinnedByAdmin ? '#b45309' : '#166534', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+              {pinnedByAdmin ? 'Pinned Hero Article' : 'Current Hero — Highest Score'}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {pinned.title}
+            </div>
+            {pinned.category && (
+              <div style={{ fontSize: 12, color: '#92400e', marginTop: 2 }}>{pinned.category.name}</div>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+            {pinned.pinExpiresAt && (
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>Expires</div>
+                <div style={{ fontSize: 12, color: '#78350f' }}>
+                  {new Date(pinned.pinExpiresAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                </div>
+              </div>
+            )}
+            <div style={{ textAlign: 'center', background: pinnedByAdmin ? '#fef3c7' : '#dcfce7', borderRadius: 8, padding: '6px 12px' }}>
+              <div style={{ fontSize: 11, color: pinnedByAdmin ? '#92400e' : '#166534', fontWeight: 600 }}>Score</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: pinnedByAdmin ? '#b45309' : '#16a34a' }}>
+                {pinned.newsScore?.finalScore != null ? pinned.newsScore.finalScore.toFixed(1) : '—'}
+              </div>
+            </div>
+            <Link href={`/admin/news/${pinned.id}/edit`} style={{
+              fontSize: 13, padding: '6px 14px', background: '#2563eb', color: '#fff',
+              borderRadius: 6, textDecoration: 'none', fontWeight: 600,
+            }}>
+              Edit
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 8,
+          padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#94a3b8',
+        }}>
+          No article pinned as hero — system will auto-select highest scoring article.
+        </div>
+      )}
+
       {/* Stats bar */}
       <div style={{ color: '#64748b', fontSize: 13, marginBottom: 12 }}>
         {total} articles found {status && `with status: ${status}`}
@@ -132,6 +199,7 @@ export default function AdminNewsPage() {
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, color: '#64748b', fontWeight: 600 }}>Title</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, color: '#64748b', fontWeight: 600 }}>Category</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, color: '#64748b', fontWeight: 600 }}>Status</th>
+                <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12, color: '#64748b', fontWeight: 600 }}>Score</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, color: '#64748b', fontWeight: 600 }}>Date</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, color: '#64748b', fontWeight: 600 }}>Actions</th>
               </tr>
@@ -140,9 +208,13 @@ export default function AdminNewsPage() {
               {articles.map((a, i) => {
                 const sc = STATUS_COLORS[a.status] ?? { bg: '#f1f5f9', color: '#475569' }
                 return (
-                  <tr key={a.id} style={{ borderBottom: i < articles.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                  <tr key={a.id} style={{
+                    borderBottom: i < articles.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    background: a.pinToHomepage ? '#fffbeb' : 'transparent',
+                  }}>
                     <td style={{ padding: '12px 16px', maxWidth: 300 }}>
                       <div style={{ fontSize: 14, color: '#1e293b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {a.pinToHomepage && <span style={{ fontSize: 11, marginRight: 5 }}>📌</span>}
                         {a.isBreakingNews && <span style={{ fontSize: 11, background: '#fef2f2', color: '#ef4444', padding: '1px 6px', borderRadius: 4, marginRight: 6 }}>BREAKING</span>}
                         {a.title}
                       </div>
@@ -158,6 +230,18 @@ export default function AdminNewsPage() {
                       }}>
                         {a.status.replace('_', ' ')}
                       </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                      {a.newsScore?.finalScore != null ? (
+                        <span style={{
+                          fontSize: 13, fontWeight: 700,
+                          color: a.newsScore.finalScore >= 100 ? '#16a34a' : a.newsScore.finalScore >= 50 ? '#2563eb' : '#94a3b8',
+                        }}>
+                          {a.newsScore.finalScore.toFixed(1)}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 12, color: '#cbd5e1' }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
                       {a.publishedDate ? new Date(a.publishedDate).toLocaleDateString('en-IN') : new Date(a.createdAt).toLocaleDateString('en-IN')}
