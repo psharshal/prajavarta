@@ -189,7 +189,20 @@ export async function PUT(req: NextRequest) {
 
     const slug = body.title ? await buildUniqueSlug(body.title, id) : undefined
 
-    const PIN_DURATION_MS = 24 * 60 * 60 * 1000
+    // pinDurationHours is required when pinning
+    if (body.pinToHomepage === true) {
+      const hrs = parseInt(body.pinDurationHours ?? '')
+      if (!hrs || hrs < 1) {
+        return NextResponse.json(
+          { error: 'Pin duration in hours is required (minimum 1 hour) when pinning as hero' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const pinDurationMs = body.pinDurationHours
+      ? parseInt(body.pinDurationHours) * 60 * 60 * 1000
+      : 0
 
     // When pinning as hero, unpin all other articles and clear their expiry
     if (body.pinToHomepage === true) {
@@ -214,7 +227,7 @@ export async function PUT(req: NextRequest) {
         editorialLabel:    (body.editorialLabel as EditorialLabel) ?? undefined,
         pinToHomepage:     body.pinToHomepage ?? undefined,
         pinExpiresAt:      body.pinToHomepage === true
-                             ? new Date(Date.now() + PIN_DURATION_MS)
+                             ? new Date(Date.now() + pinDurationMs)
                              : body.pinToHomepage === false
                                ? null
                                : undefined,
