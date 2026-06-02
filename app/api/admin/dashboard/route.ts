@@ -63,9 +63,18 @@ export async function GET(req: NextRequest) {
       }),
       prisma.news.findFirst({
         where: { pinToHomepage: true },
-        select: { id: true, title: true, slug: true, featuredImage: true, publishedDate: true, category: { select: { name: true } } },
+        select: { id: true, title: true, slug: true, featuredImage: true, publishedDate: true, pinExpiresAt: true, category: { select: { name: true } }, newsScore: { select: { finalScore: true } } },
       }),
     ])
+
+    const heroSelect = { id: true, title: true, slug: true, featuredImage: true, publishedDate: true, pinExpiresAt: true, category: { select: { name: true } }, newsScore: { select: { finalScore: true } } }
+
+    // If nothing pinned, show highest-scoring published article
+    const hero = heroArticle ?? await prisma.news.findFirst({
+      where: { isActive: true, status: 'PUBLISHED' },
+      orderBy: { newsScore: { finalScore: 'desc' } },
+      select: heroSelect,
+    })
 
     return NextResponse.json({
       success: true,
@@ -78,7 +87,8 @@ export async function GET(req: NextRequest) {
         breakingNews,
         todayNews,
         topStories,
-        heroArticle,
+        heroArticle: hero,
+        heroIsPinned: !!heroArticle,
       },
     })
   } catch (err: any) {
