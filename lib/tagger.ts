@@ -12,6 +12,40 @@ export interface LocationResult {
   confidence: number
 }
 
+// ---------------------------------------------------------------------------
+// Stop-word lists for tag extraction
+// ---------------------------------------------------------------------------
+
+const MARATHI_STOP_WORDS = new Set([
+  'आणि', 'की', 'पण', 'तर', 'म्हणून', 'कारण', 'जेव्हा', 'तेव्हा',
+  'आहे', 'होते', 'झाले', 'केले', 'सांगितले', 'म्हणाले', 'आले',
+  'या', 'त्या', 'हे', 'ते', 'एक', 'एका', 'तो', 'ती', 'ज्या',
+  'असे', 'असा', 'अशा', 'त्यांनी', 'त्यांचे', 'त्यांना', 'त्यांच्या',
+  'आपले', 'आपली', 'त्याच्या', 'त्याने', 'तिने', 'त्याला', 'तिला',
+  'मात्र', 'नाही', 'होत', 'करण्यात', 'करण्याचे', 'करण्यासाठी',
+  'सुरू', 'झाली', 'असून', 'येथे', 'आता', 'तसेच', 'तेथे',
+  'दरम्यान', 'वेळी', 'नंतर', 'आधी', 'पुढे', 'नव्हते',
+  'काही', 'सर्व', 'जास्त', 'कमी', 'मोठे', 'लहान',
+  'झाला', 'झाल्या', 'होऊन', 'करून', 'घेऊन', 'देऊन',
+  'असलेल्या', 'केलेल्या', 'झालेल्या', 'येणार', 'जाणार',
+  'आहेत', 'नाहीत', 'होती', 'होतो', 'होते', 'व्हायला',
+  'असताना', 'झालेले', 'करत', 'घेत', 'देत', 'येत', 'जात',
+  'त्यामुळे', 'परंतु', 'तथापि', 'शिवाय', 'अजून', 'अद्याप',
+])
+
+const ENGLISH_STOP_WORDS = new Set([
+  'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+  'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'has', 'have',
+  'had', 'be', 'been', 'being', 'do', 'does', 'did', 'will', 'would',
+  'could', 'should', 'may', 'might', 'shall', 'can', 'that', 'this',
+  'these', 'those', 'it', 'its', 'as', 'up', 'out', 'if', 'he', 'she',
+  'they', 'we', 'his', 'her', 'their', 'our', 'not', 'also', 'than',
+  'then', 'so', 'just', 'more', 'about', 'after', 'before', 'when',
+  'while', 'which', 'who', 'what', 'how', 'where', 'there', 'here',
+  'said', 'says', 'new', 'get', 'got', 'now', 'one', 'two', 'over',
+  'into', 'onto', 'upon', 'been', 'has', 'have', 'had', 'no', 'yes',
+])
+
 // Category keyword dictionary (Marathi variants)
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'rajkaran': [
@@ -52,16 +86,46 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   ],
 }
 
-// City keyword dictionary (Marathi name variants)
+// City / district keyword dictionary (Marathi name variants → English DB key)
 const CITY_KEYWORDS: Record<string, string[]> = {
-  'pune': ['पुणे', 'पुण्यात', 'पुण्याच्या', 'पुण्याहून', 'पुण्याला', 'पुणेकर'],
-  'mumbai': ['मुंबई', 'मुंबईत', 'मुंबईच्या', 'मुंबईहून', 'मुंबईला', 'मुंबईकर'],
-  'nagpur': ['नागपूर', 'नागपुरात', 'नागपुरच्या'],
-  'aurangabad': ['औरंगाबाद', 'छत्रपती संभाजीनगर', 'औरंगाबादेत'],
-  'nashik': ['नाशिक', 'नाशिकमध्ये', 'नाशिकच्या'],
-  'kolhapur': ['कोल्हापूर', 'कोल्हापुरात'],
-  'solapur': ['सोलापूर', 'सोलापुरात'],
-  'thane': ['ठाणे', 'ठाण्यात', 'ठाण्याच्या'],
+  // Tier-1 metros
+  'pune':        ['पुणे', 'पुण्यात', 'पुण्याच्या', 'पुण्याहून', 'पुण्याला', 'पुणेकर'],
+  'mumbai':      ['मुंबई', 'मुंबईत', 'मुंबईच्या', 'मुंबईहून', 'मुंबईला', 'मुंबईकर'],
+  'nagpur':      ['नागपूर', 'नागपुरात', 'नागपुरच्या', 'नागपुरला'],
+  'thane':       ['ठाणे', 'ठाण्यात', 'ठाण्याच्या', 'ठाण्याला'],
+  // Tier-2 cities / districts
+  'nashik':      ['नाशिक', 'नाशिकमध्ये', 'नाशिकच्या', 'नाशिकला'],
+  'kolhapur':    ['कोल्हापूर', 'कोल्हापुरात', 'कोल्हापुरच्या'],
+  'solapur':     ['सोलापूर', 'सोलापुरात', 'सोलापुरच्या'],
+  'aurangabad':  ['औरंगाबाद', 'छत्रपती संभाजीनगर', 'औरंगाबादेत', 'संभाजीनगरात'],
+  'amravati':    ['अमरावती', 'अमरावतीत', 'अमरावतीच्या'],
+  'nanded':      ['नांदेड', 'नांदेडमध्ये', 'नांदेडच्या'],
+  'akola':       ['अकोला', 'अकोल्यात', 'अकोल्याच्या'],
+  'latur':       ['लातूर', 'लातूरमध्ये', 'लातूरच्या'],
+  'osmanabad':   ['उस्मानाबाद', 'धाराशिव', 'धाराशिवमध्ये'],
+  'jalgaon':     ['जळगाव', 'जळगावमध्ये', 'जळगावच्या'],
+  'ahmednagar':  ['अहमदनगर', 'नगरमध्ये', 'नगरच्या', 'अहमदनगरमध्ये'],
+  'sangli':      ['सांगली', 'सांगलीत', 'सांगलीच्या'],
+  'satara':      ['सातारा', 'सातारामध्ये', 'साताऱ्यात'],
+  'raigad':      ['रायगड', 'रायगडमध्ये', 'अलिबाग'],
+  'ratnagiri':   ['रत्नागिरी', 'रत्नागिरीत', 'रत्नागिरीच्या'],
+  'sindhudurg':  ['सिंधुदुर्ग', 'सिंधुदुर्गमध्ये'],
+  'dhule':       ['धुळे', 'धुळ्यात', 'धुळ्याच्या'],
+  'nandurbar':   ['नंदुरबार', 'नंदुरबारमध्ये'],
+  'wardha':      ['वर्धा', 'वर्ध्यात', 'वर्ध्याच्या'],
+  'yavatmal':    ['यवतमाळ', 'यवतमाळमध्ये'],
+  'buldhana':    ['बुलढाणा', 'बुलडाणामध्ये'],
+  'washim':      ['वाशीम', 'वाशिममध्ये'],
+  'hingoli':     ['हिंगोली', 'हिंगोलीमध्ये'],
+  'parbhani':    ['परभणी', 'परभणीमध्ये'],
+  'beed':        ['बीड', 'बीडमध्ये', 'बीडच्या'],
+  'jalna':       ['जालना', 'जालन्यात'],
+  'gondia':      ['गोंदिया', 'गोंदियामध्ये'],
+  'bhandara':    ['भंडारा', 'भंडाऱ्यात'],
+  'chandrapur':  ['चंद्रपूर', 'चंद्रपुरात'],
+  'gadchiroli':  ['गडचिरोली', 'गडचिरोलीमध्ये'],
+  'palghar':     ['पालघर', 'पालघरमध्ये'],
+  'mumbai suburban': ['मुंबई उपनगर', 'उपनगरात'],
 }
 
 // Area keyword dictionary (sub-city locations → area tags)
@@ -119,6 +183,71 @@ export function extractAreas(text: string): LocationResult[] {
 
   return results
 }
+
+// ---------------------------------------------------------------------------
+// Tag extraction — pure text algorithm, no third-party dependency
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract meaningful keywords from news content to use as comma-separated tags.
+ * Title gets 3× weight; HTML is stripped from body.
+ * Returns up to `maxTags` unique terms sorted by frequency.
+ */
+export function extractTags(title: string, summary: string, bodyHtml: string, maxTags = 8): string[] {
+  const bodyText = bodyHtml.replace(/<[^>]+>/g, ' ')
+  const fullText = `${title} ${title} ${title} ${summary} ${bodyText}`.slice(0, 6000)
+
+  const freq = new Map<string, number>()
+
+  // Split on whitespace and common punctuation / Devanagari sentence markers
+  const tokens = fullText.split(/[\s,।॥.!?;:"'()\[\]{}/\\|]+/)
+
+  for (const raw of tokens) {
+    const word = raw.replace(/^[-–—]+|[-–—]+$/g, '').trim()
+    if (!word || word.length < 3) continue
+
+    // Determine script: Devanagari vs Latin
+    const devanagariChars = (word.match(/[\u0900-\u097F]/g) ?? []).length
+    const isDevanagari = devanagariChars > word.length * 0.5
+
+    if (isDevanagari) {
+      if (word.length < 4) continue
+      if (MARATHI_STOP_WORDS.has(word)) continue
+      freq.set(word, (freq.get(word) ?? 0) + 1)
+    } else {
+      const lower = word.toLowerCase()
+      if (ENGLISH_STOP_WORDS.has(lower)) continue
+      if (word.length < 3) continue
+
+      // Prefer proper nouns (starts uppercase) or ALL-CAPS abbreviations (e.g. BJP, IPC)
+      const key = /^[A-Z]/.test(word) ? word : lower
+      freq.set(key, (freq.get(key) ?? 0) + 1)
+    }
+  }
+
+  // Sort by frequency desc, then alphabetically for stability
+  const sorted = Array.from(freq.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([word]) => word)
+
+  // Deduplicate case-insensitively (keep the highest-ranked casing variant)
+  const seen = new Set<string>()
+  const tags: string[] = []
+  for (const word of sorted) {
+    const key = word.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      tags.push(word)
+    }
+    if (tags.length >= maxTags) break
+  }
+
+  return tags
+}
+
+// ---------------------------------------------------------------------------
+// Composite tagger
+// ---------------------------------------------------------------------------
 
 // Composite: tag an article, return all signals
 export interface TaggingResult {

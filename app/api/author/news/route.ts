@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyToken, AUTHOR_AUTH_COOKIE_NAME } from '@/lib/auth'
 import { tagArticle } from '@/lib/tagger'
+import { autoEnrichNews } from '@/lib/auto-enrich'
 
 async function requireAuthor(req: NextRequest) {
   const token = req.cookies.get(AUTHOR_AUTH_COOKIE_NAME)?.value
@@ -83,6 +84,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const slug = await buildUniqueSlug(body.title ?? '')
 
+    // Auto-enrich fields not provided in the payload
+    let finalCategoryId = toInt(body.categoryId)
+    let finalDistrictId = toInt(body.districtId)
+    let finalTags: string | null = body.tags ?? null
+
+    if (!finalCategoryId || !finalDistrictId || !finalTags) {
+      const enriched = await autoEnrichNews(
+        body.title       ?? '',
+        body.summary     ?? '',
+        body.description ?? '',
+      )
+      if (!finalCategoryId) finalCategoryId = enriched.categoryId
+      if (!finalDistrictId) finalDistrictId = enriched.districtId
+      if (!finalTags) finalTags       = enriched.tags
+    }
+
     const news = await prisma.news.create({
       data: {
         slug,
@@ -93,14 +110,14 @@ export async function POST(req: NextRequest) {
         description:   body.description?.trim() ?? null,
         language:      body.language ?? 'Marathi',
         featuredImage: body.featuredImage ?? null,
-        tags:          body.tags ?? null,
+        tags:          finalTags,
         videoId:       body.videoId ?? null,
         videoUrl:      body.videoUrl ?? null,
         // Reporters submit for review — they cannot publish directly
         status:        'PENDING_REVIEW',
         isActive:      false,
-        categoryId:    toInt(body.categoryId),
-        districtId:    toInt(body.districtId),
+        categoryId:    finalCategoryId,
+        districtId:    finalDistrictId,
         authorId:      author.userId,
         userId:        author.userId,
       },
@@ -172,6 +189,36 @@ export async function PUT(req: NextRequest) {
 
     const slug = body.title ? await buildUniqueSlug(body.title, id) : undefined
 
+    // Auto-enrich fields absent from the payload, using merged text context
+    const needsEnrich = !body.categoryId || !body.districtId || !body.tags;  
+
+    let enrichedCategoryId: number | null = null
+    let enrichedDistrictId: number | null = null
+    let enrichedTags:        string | null = null
+
+    if (needsEnrich) {
+      const currentNews = await prisma.news.findUnique({
+        where:  { id },
+        select: { title: true, summary: true, description: true },
+      })
+
+      const titleForEnrich       = body.title       ?? currentNews?.title       ?? ''
+      const summaryForEnrich     = body.summary     ?? currentNews?.summary     ?? ''
+      const descriptionForEnrich = body.description ?? currentNews?.description ?? ''
+
+      const enriched = await autoEnrichNews(titleForEnrich, summaryForEnrich, descriptionForEnrich)
+      enrichedCategoryId = enriched.categoryId
+      enrichedDistrictId = enriched.districtId
+      enrichedTags       = enriched.tags
+    }
+
+    const finalCategoryId =
+      body.categoryId ? (toInt(body.categoryId) ?? undefined) : (enrichedCategoryId ?? undefined)
+    const finalDistrictId =
+      body.districtId ? (toInt(body.districtId) ?? undefined) : (enrichedDistrictId ?? undefined)
+    const finalTags =
+      body.tags ? (body.tags ?? null) : (enrichedTags ?? null)
+
     const updated = await prisma.news.update({
       where: { id },
       data: {
@@ -180,9 +227,9 @@ export async function PUT(req: NextRequest) {
         ...(body.summary      !== undefined && { summary: body.summary?.trim() }),
         ...(body.description  !== undefined && { description: body.description?.trim() }),
         ...(body.featuredImage !== undefined && { featuredImage: body.featuredImage }),
-        ...(body.tags         !== undefined && { tags: body.tags }),
-        ...(body.categoryId   !== undefined && { categoryId: toInt(body.categoryId) }),
-        ...(body.districtId   !== undefined && { districtId: toInt(body.districtId) }),
+        tags:       finalTags,
+        categoryId: finalCategoryId ?? undefined,
+        districtId: finalDistrictId ?? undefined,
         // Re-submit for review after edit
         status: 'PENDING_REVIEW',
       },
