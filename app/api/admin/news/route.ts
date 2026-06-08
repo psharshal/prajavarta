@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { verifyToken, ADMIN_AUTH_COOKIE_NAME } from '@/lib/auth'
 import { tagArticle } from '@/lib/tagger'
 import { computeScore, freshnessScore } from '@/lib/scoring'
+import { autoEnrichNews } from '@/lib/auto-enrich'
 
 type EditorialLabel = 'NORMAL' | 'FEATURED' | 'HERO_CANDIDATE' | 'MAIN_HERO' | 'BREAKING'
 type ArticleStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED'
@@ -114,6 +115,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const slug = await buildUniqueSlug(body.title ?? '')
 
+    // Auto-enrich fields that were not provided in the payload
+    let finalCategoryId = toInt(body.categoryId)
+    let finalDistrictId = toInt(body.districtId)
+    let finalTags: string | null = body.tags ?? null
+
+    if (!finalCategoryId || !finalDistrictId || !finalTags) {
+      const enriched = await autoEnrichNews(
+        body.title   ?? '',
+        body.summary ?? '',
+        body.description ?? '',
+      )
+      if (!finalCategoryId) finalCategoryId = enriched.categoryId
+      if (!finalDistrictId) finalDistrictId = enriched.districtId
+      if (!finalTags) finalTags       = enriched.tags
+    }
+
     const news = await prisma.news.create({
       data: {
         slug,
@@ -124,7 +141,7 @@ export async function POST(req: NextRequest) {
         description:       body.description?.trim() ?? null,
         language:          body.language ?? 'Marathi',
         featuredImage:     body.featuredImage ?? null,
-        tags:              body.tags ?? null,
+        tags:              finalTags,
         videoId:           body.videoId ?? null,
         videoUrl:          body.videoUrl ?? null,
         isBreakingNews:    body.editorialLabel === 'BREAKING',
@@ -139,8 +156,8 @@ export async function POST(req: NextRequest) {
         isActive:          body.isActive !== false,
         publishedDate:     body.publishedDate ? new Date(body.publishedDate) : null,
         sendNotification:  body.sendNotification ?? false,
-        categoryId:        toInt(body.categoryId),
-        districtId:        toInt(body.districtId),
+        categoryId:        finalCategoryId,
+        districtId:        finalDistrictId,
         subdivisionId:     toInt(body.subdivisionId),
         tehsilId:          toInt(body.tehsilId),
         locationId:        toInt(body.locationId),
@@ -212,6 +229,37 @@ export async function PUT(req: NextRequest) {
       })
     }
 
+    // Auto-enrich fields that were NOT provided in the payload.
+    // Fetch the existing record so we can use its current content as context
+    // when the admin is updating unrelated fields and has not re-supplied text.
+    const needsEnrich = !body.categoryId || !body.districtId || !body.tags;  
+    let enrichedCategoryId: number | null = null
+    let enrichedDistrictId: number | null = null
+    let enrichedTags:        string | null = null
+
+    if (needsEnrich) {
+      const existing = await prisma.news.findUnique({
+        where:  { id },
+        select: { title: true, summary: true, description: true },
+      })
+
+      // Use updated text if provided, otherwise fall back to what's already stored
+      const titleForEnrich       = body.title       ?? existing?.title       ?? ''
+      const summaryForEnrich     = body.summary     ?? existing?.summary     ?? ''
+      const descriptionForEnrich = body.description ?? existing?.description ?? ''
+
+      const enriched = await autoEnrichNews(titleForEnrich, summaryForEnrich, descriptionForEnrich)
+      enrichedCategoryId = enriched.categoryId
+      enrichedDistrictId = enriched.districtId
+      enrichedTags       = enriched.tags
+    }
+    // Resolve final values: explicit payload wins; fall back to auto-enriched
+    const finalCategoryId =
+      body.categoryId ? (toInt(body.categoryId) ?? undefined) : (enrichedCategoryId ?? undefined)
+    const finalDistrictId =
+      body.districtId ? (toInt(body.districtId) ?? undefined) : (enrichedDistrictId ?? undefined)
+    const finalTags =
+      body.tags ? (body.tags ?? null) : enrichedTags
     const updated = await prisma.news.update({
       where: { id },
       data: {
@@ -220,7 +268,7 @@ export async function PUT(req: NextRequest) {
         summary:           body.summary?.trim() ?? null,
         description:       body.description?.trim() ?? null,
         featuredImage:     body.featuredImage ?? null,
-        tags:              body.tags ?? null,
+        tags:              finalTags,
         isBreakingNews:    body.editorialLabel === 'BREAKING',
         isTrendingNews:    body.isTrendingNews ?? false,
         isMiniTrendingNews: body.isMiniTrendingNews ?? false,
@@ -236,8 +284,8 @@ export async function PUT(req: NextRequest) {
         status:            (body.status as ArticleStatus) ?? undefined,
         isActive:          body.isActive ?? undefined,
         publishedDate:     body.publishedDate ? new Date(body.publishedDate) : undefined,
-        categoryId:        toInt(body.categoryId) ?? undefined,
-        districtId:        toInt(body.districtId) ?? undefined,
+        categoryId:        finalCategoryId,
+        districtId:        finalDistrictId,
         authorId:          toInt(body.authorId) ?? undefined,
       },
     })
